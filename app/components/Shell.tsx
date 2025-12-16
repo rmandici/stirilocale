@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { Header } from "./Header";
 import { MarketTicker } from "./MarketTicker";
-import { BannerOverlay } from "./BannerOverlay";
 import { Footer } from "./Footer";
 
 export function Shell({ children }: { children: React.ReactNode }) {
@@ -34,13 +33,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <Header showCompactLogo={collapsed} navShifted={collapsed} />
-
-      {/* spațiu CONSTANT sub header ca să aibă loc bannerul (NU se schimbă la scroll) */}
-      <div className="h-[112px] md:h-[164px]" />
+      <Header />
 
       {/* banner overlay (nu împinge nimic) */}
-      <BannerOverlay hidden={collapsed} />
 
       <MarketTicker />
       {children}
