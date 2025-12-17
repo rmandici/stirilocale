@@ -4,7 +4,7 @@ import type { Post } from "../data/posts";
 
 export function StoryCard({ post }: { post: Post }) {
   return (
-    <article className="group overflow-hidden rounded-lg border transition hover:shadow-md">
+    <article className="group overflow-hidden transition hover:shadow-md">
       <Link href={`/stire/${post.slug}`} className="block">
         <div className="relative aspect-[16/9]">
           <Image

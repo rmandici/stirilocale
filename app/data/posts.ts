@@ -1,15 +1,21 @@
 import type { CategorySlug } from "./categories";
 import { categories } from "./categories";
 
+export type Category = {
+  id?: number | string;
+  slug: string;
+  name: string;
+};
+
 export type Post = {
   id: string;
   slug: string;
   title: string;
   excerpt: string;
-  content: string; // html string
-  category: { slug: CategorySlug; name: string };
+  content: string;
+  category: Category; // 👈 nu mai e limitată
   author: string;
-  publishedAt: string; // ISO
+  publishedAt: string;
   image: string;
   images: string[];
   featured?: boolean;

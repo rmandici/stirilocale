@@ -6,8 +6,6 @@ import { categories } from "../data/categories";
 import { CurrencyChip } from "./CurrencyChip";
 import { MobileDrawer } from "./MobileDrawer";
 import { HamburgerButton } from "./HamburgerButton";
-
-// IMPORTANT: trebuie să ai aceste 2 fișiere din pașii anteriori
 import { DesktopNavDropdown } from "./DesktopNavDropdown";
 import { getLatestPostsByCategory } from "./getPosts";
 
@@ -34,18 +32,14 @@ type DropdownVariant = "hero-2small" | "two-hero" | "hero-list" | "three-hero";
 function dropdownVariantFor(slug: string): DropdownVariant {
   if (slug === "categorie-3") return "two-hero";
   if (slug === "categorie-5") return "three-hero";
-
   if (slug === "categorie-1") return "hero-list";
   if (slug === "video") return "two-hero";
-
   return "hero-2small";
 }
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<"menu" | "search">("menu");
-
-  // desktop search bar (ss2) – apare/dispare sub header
   const [desktopSearchOpen, setDesktopSearchOpen] = useState(false);
 
   // dropdown hover desktop
@@ -61,7 +55,7 @@ export function Header() {
 
   const headerRef = useRef<HTMLElement | null>(null);
 
-  // set header height in CSS var for mobile drawer offset
+  // set header height in CSS var (pentru layoutul tău cu 100vh - header)
   useEffect(() => {
     const setH = () => {
       const h = headerRef.current?.offsetHeight ?? 64;
@@ -70,9 +64,8 @@ export function Header() {
     setH();
     window.addEventListener("resize", setH);
     return () => window.removeEventListener("resize", setH);
-  }, []);
+  }, [desktopSearchOpen]);
 
-  // clear timer on unmount + ESC closes dropdown
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -109,8 +102,8 @@ export function Header() {
 
   return (
     <>
-      <header ref={headerRef} className="sticky top-0 z-40">
-        {/* DESKTOP: TOP BAR (negru) – doar redirect */}
+      <header ref={headerRef} className="z-40">
+        {/* DESKTOP: TOP BAR (negru) */}
         <div className="hidden md:block bg-black text-white">
           <div className="mx-auto max-w-full px-4">
             <div className="flex h-10 items-center justify-between">
@@ -160,7 +153,7 @@ export function Header() {
           </div>
         </div>
 
-        {/* MOBILE: Foxiz style (roșu) */}
+        {/* MOBILE: roșu */}
         <div className="md:hidden bg-red-700 text-white">
           <div className="mx-auto max-w-[80rem] px-4">
             <div className="flex h-14 items-center justify-between">
@@ -200,7 +193,6 @@ export function Header() {
             </div>
           </div>
 
-          {/* MOBILE: bandă categorii scroll (doar redirect) */}
           {!menuOpen && (
             <div className="border-t border-white/10">
               <div
@@ -226,12 +218,10 @@ export function Header() {
           )}
         </div>
 
-        {/* DESKTOP: MAIN BAR (roșu) */}
+        {/* DESKTOP: roșu */}
         <div className="hidden md:block bg-red-700 text-white">
-          {/* relative ca dropdown-ul să se ancoreze corect */}
           <div className="relative mx-auto max-w-full px-4">
             <div className="flex h-16 items-center">
-              {/* stânga */}
               <div className="flex items-center gap-4">
                 <Link
                   href="/"
@@ -241,13 +231,11 @@ export function Header() {
                 </Link>
               </div>
 
-              {/* centru: wrapper comun pentru hover (meniu + dropdown) */}
               <div
                 className="absolute inset-0 flex items-center justify-center"
                 onMouseEnter={cancelCloseHover}
                 onMouseLeave={scheduleCloseHover}
               >
-                {/* nav rămâne centrat */}
                 <nav className="flex items-center gap-8 text-[13px] font-extrabold uppercase whitespace-nowrap">
                   <Link href="/" className="opacity-95 hover:opacity-100">
                     Acasă
@@ -260,7 +248,6 @@ export function Header() {
                       onMouseEnter={() => openHover(c.slug, c.name)}
                     >
                       <Link href={`/categorie/${c.slug}`}>{c.name}</Link>
-
                       <span
                         className={[
                           "inline-flex items-center justify-center ml-1 text-[16px] font-black",
@@ -275,7 +262,6 @@ export function Header() {
                   ))}
                 </nav>
 
-                {/* dropdown sub bară, full width (părintele e inset-0 => full) */}
                 {hoverCat && (
                   <div onMouseEnter={cancelCloseHover}>
                     <DesktopNavDropdown
@@ -301,7 +287,6 @@ export function Header() {
                 )}
               </div>
 
-              {/* dreapta */}
               <div className="ml-auto flex items-center gap-3">
                 <CurrencyChip />
 
@@ -324,7 +309,6 @@ export function Header() {
           </div>
         </div>
 
-        {/* DESKTOP: search bar “finuț” */}
         {desktopSearchOpen && (
           <div className="hidden md:block bg-white">
             <div className="mx-auto max-w-[80rem] px-4">
@@ -332,7 +316,7 @@ export function Header() {
                 <div className="flex items-center gap-2 rounded-md border bg-white px-3 py-2 shadow-sm">
                   <IconSearch className="h-4 w-4 text-gray-500" />
                   <input
-                    placeholder="Caută știri..."
+                    placeholder="Caută știri."
                     className="w-full bg-transparent text-sm outline-none"
                   />
                   <button
@@ -349,7 +333,6 @@ export function Header() {
         )}
       </header>
 
-      {/* MOBILE DRAWER */}
       <MobileDrawer
         open={menuOpen}
         mode={drawerMode}
