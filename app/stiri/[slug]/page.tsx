@@ -22,6 +22,7 @@ export default async function Stire({ params }: { params: { slug: string } }) {
       </div>
 
       {post.image && (
+        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={post.image}
           alt=""

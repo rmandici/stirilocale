@@ -32,7 +32,7 @@ export function CurrencyChip({ compact = false }: { compact?: boolean }) {
   return (
     <div
       className={[
-        "h-10 items-center justify-center rounded-md border bg-white px-3",
+        "h-10 items-center justify-center rounded-md bg-white dark:bg-gray-900 px-3",
         compact ? "w-[132px]" : "w-[210px]",
         "flex",
       ].join(" ")}
@@ -45,9 +45,11 @@ export function CurrencyChip({ compact = false }: { compact?: boolean }) {
         ].join(" ")}
       >
         <div className="flex items-baseline gap-2">
-          <span className="font-semibold text-gray-900">{r.code}</span>
+          <span className="font-semibold text-gray-900 dark:text-gray-200">
+            {r.code}
+          </span>
           {!compact && (
-            <span className="tabular-nums text-gray-700">
+            <span className="tabular-nums text-gray-700 dark:text-gray-400">
               {r.ron.toFixed(2)} RON
             </span>
           )}

@@ -3,8 +3,8 @@ import type { Post } from "../data/posts";
 
 export function MostRead({ posts }: { posts: Post[] }) {
   return (
-    <div className="rounded-lg border bg-white p-4">
-      <h3 className="text-sm font-extrabold uppercase tracking-wide text-gray-900">
+    <div className=" p-4">
+      <h3 className="text-sm font-extrabold uppercase tracking-wide text-gray-900 dark:text-gray-200">
         Cele mai citite
       </h3>
 
@@ -17,7 +17,7 @@ export function MostRead({ posts }: { posts: Post[] }) {
 
             <Link
               href={`/stire/${p.slug}`}
-              className="min-w-0 text-sm font-semibold leading-snug text-gray-900 hover:underline"
+              className="min-w-0 text-sm font-semibold leading-snug text-gray-900 dark:text-gray-200 hover:underline"
             >
               <span className="line-clamp-2">{p.title}</span>
               <span className="mt-1 block text-[11px] text-gray-500">

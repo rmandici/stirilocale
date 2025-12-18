@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Header } from "./Header";
 import { MarketTicker } from "./MarketTicker";
 import { Footer } from "./Footer";
+import { ThemeProvider } from "./theme-provider";
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -33,13 +34,18 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <Header />
+      <ThemeProvider>
+        <Header />
 
-      {/* banner overlay (nu împinge nimic) */}
+        {/* banner overlay (nu împinge nimic) */}
 
-      <MarketTicker />
-      {children}
-      <Footer />
+        <MarketTicker />
+        <div className="bg-white text-gray-900 dark:bg-black/95 dark:text-white">
+          {children}
+        </div>
+
+        <Footer />
+      </ThemeProvider>
     </>
   );
 }

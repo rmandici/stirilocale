@@ -23,7 +23,7 @@ function Tag({ children }: { children: React.ReactNode }) {
 
 function SectionTitle({
   title,
-  href,
+
   light,
 }: {
   title: string;
@@ -36,27 +36,10 @@ function SectionTitle({
         <div
           className={cn("h-[3px] w-8", light ? "bg-red-500" : "bg-red-600")}
         />
-        <h2
-          className={cn(
-            "text-sm font-extrabold uppercase tracking-wide",
-            light ? "text-white" : "text-gray-900"
-          )}
-        >
+        <h2 className="text-sm font-extrabold uppercase tracking-wide dark:text-white text-gray-900">
           {title}
         </h2>
       </div>
-
-      {href && (
-        <Link
-          href={href}
-          className={cn(
-            "text-sm hover:underline",
-            light ? "text-white/75" : "text-gray-500 hover:text-black"
-          )}
-        >
-          Vezi toate
-        </Link>
-      )}
     </div>
   );
 }
@@ -75,7 +58,7 @@ function MiniStory({
       <div className="flex gap-3">
         {showThumb && (
           // ❌ scos rounded-md
-          <div className="h-16 w-24 flex-shrink-0 overflow-hidden bg-gray-100">
+          <div className="h-16 w-24 flex-shrink-0 overflow-hidde">
             <img
               src={p.image}
               alt={p.title}
@@ -110,7 +93,7 @@ function MiniStory({
 function BigCard({ p, tall }: { p: (typeof posts)[number]; tall?: boolean }) {
   return (
     // ❌ scos rounded-2xl
-    <div className="bg-white p-5">
+    <div className="">
       <div className="text-xs text-gray-500">{p.category.name}</div>
       <Link
         href={`/stire/${p.slug}`}
@@ -123,7 +106,7 @@ function BigCard({ p, tall }: { p: (typeof posts)[number]; tall?: boolean }) {
       <Link
         href={`/stire/${p.slug}`}
         // ❌ scos rounded-2xl
-        className="mt-4 block overflow-hidden bg-gray-100"
+        className="mt-4 block overflow-hidden"
       >
         <img
           src={p.image}
@@ -140,13 +123,12 @@ function BigCard({ p, tall }: { p: (typeof posts)[number]; tall?: boolean }) {
 }
 
 export default function Home() {
-  const featured = posts.find((p) => p.featured) ?? posts[0];
-
   const latest = [...posts].sort(
     (a, b) => +new Date(b.publishedAt) - +new Date(a.publishedAt)
   );
 
-  const rest = latest.filter((p) => p.id !== featured.id);
+  const featured = latest[0];
+  const rest = latest.slice(1);
 
   // ===== helpers (evităm dubluri) =====
   const used = new Set<string>([featured.id]);
@@ -161,41 +143,9 @@ export default function Home() {
     return out;
   };
 
-  // unicitate DOAR în interiorul unei secțiuni
-  const pickUniqueLocal = (pool: typeof rest, n: number) => {
-    const local = new Set<string>();
-    const out: typeof rest = [];
-    for (const p of pool) {
-      if (out.length >= n) break;
-      if (local.has(p.id)) continue;
-      local.add(p.id);
-      out.push(p);
-    }
-    return out;
-  };
-
-  // dacă vrei să excluzi doar "featured"
-  const pickExcluding = (
-    pool: typeof rest,
-    n: number,
-    exclude: Set<string>
-  ) => {
-    const local = new Set<string>();
-    const out: typeof rest = [];
-    for (const p of pool) {
-      if (out.length >= n) break;
-      if (exclude.has(p.id)) continue;
-      if (local.has(p.id)) continue;
-      local.add(p.id);
-      out.push(p);
-    }
-    return out;
-  };
-
   // ===== SECȚIUNEA 1 =====
   const bestOf = pickUnique(rest, 3);
   const headlines = pickUnique(rest, 8);
-  const headlinesExtra = pickUnique(rest, 3);
 
   // ===== SECȚIUNEA 2 (dark) =====
   const featuredGrid = pickUnique(rest, 4);
@@ -220,89 +170,64 @@ export default function Home() {
     <main>
       {/* ===== SECȚIUNEA 1 ===== */}
       {/* ✅ FIX mobil: pe mobil NU forțăm 100vh; doar pe md+ */}
-      <section className="mx-auto mt-6 max-w-6xl px-4 py-6 md:py-0 md:h-[calc(100vh-var(--header-h,64px))]">
-        <div className="grid gap-7 md:h-full md:grid-cols-12 md:items-start">
-          {/* STÂNGA – FEATURED HERO */}
-          <div className="md:col-span-6 md:flex md:h-full md:flex-col">
-            <div className="flex items-end justify-between">
-              <div className="flex items-center gap-3">
-                <span className="inline-block h-[2px] w-8 bg-red-600" />
-                <h2 className="text-sm font-extrabold tracking-wide uppercase text-gray-900">
-                  Povestea zilei
-                </h2>
-              </div>
-
-              <Link
-                href={`/categorie/${featured.category.slug}`}
-                className="text-sm text-gray-600 hover:text-black"
-              >
-                Vezi toate
-              </Link>
-            </div>
+      <section className="mx-auto min-h-[calc(100vh-var(--header-h,64px))]  max-w-6xl px-4 py-6">
+        <div className="grid gap-10 md:grid-cols-[42%_29%_20%] md:items-start">
+          {/* STÂNGA – FEATURED */}
+          <div>
+            <h2 className="inline-flex mb-4 md:mb-0 items-center bg-red-600 px-4 py-2 text-sm font-extrabold uppercase tracking-wide text-white">
+              ȘTIREA ZILEI
+            </h2>
 
             {/* ✅ FIX mobil: înălțime controlată doar pe md+ */}
-            <div className="mt-5 md:flex-1">
-              <div className="md:h-[calc(100vh-var(--header-h,64px)-84px)]">
+            <div className="md:flex-1">
+              <div className="md:h-[calc(80vh-var(--header-h,64px)-84px)]">
                 <FeaturedHero post={featured} />
               </div>
             </div>
           </div>
 
           {/* MIJLOC – RECOMANDATE */}
-          <div className="md:col-span-3">
-            <SectionTitle title="Recomandate" href="#" />
+          <div>
+            <SectionTitle title="Recomandate" />
 
             <div className="mt-5 grid gap-10">
-              {bestOf[0] && (
-                <Link href={`/stire/${bestOf[0].slug}`} className="group block">
-                  <img
-                    src={bestOf[0].image}
-                    alt={bestOf[0].title}
-                    className="w-full aspect-square object-cover"
-                  />
-                  <div className="mt-4 text-[12px] font-bold uppercase tracking-wide text-gray-500">
-                    {bestOf[0].category.name}
-                  </div>
-
-                  <div className="mt-1 text-2xl font-extrabold leading-snug">
-                    <span className="u-underline">{bestOf[0].title}</span>
-                  </div>
-
-                  <div className="mt-2 text-sm font-semibold text-gray-400">
-                    BY {bestOf[0].author} ·{" "}
-                    {new Date(bestOf[0].publishedAt).toLocaleDateString(
-                      "ro-RO"
-                    )}
-                  </div>
-                </Link>
-              )}
-
-              <div className="grid grid-cols-2 gap-6">
-                {bestOf.slice(1, 3).map((p) => (
-                  <Link
-                    key={p.id}
-                    href={`/stire/${p.slug}`}
-                    className="group block"
-                  >
+              {bestOf.slice(0, 2).map((p) => (
+                <Link
+                  key={p.id}
+                  href={`/stire/${p.slug}`}
+                  className="group block"
+                >
+                  {/* POZA (3/4) */}
+                  <div className="aspect-[16/9] w-full overflow-hidden">
                     <img
                       src={p.image}
                       alt={p.title}
-                      className="w-full aspect-square object-cover"
+                      className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
                     />
-                    <div className="mt-3 text-[11px] font-bold uppercase tracking-wide text-gray-500">
-                      {p.category.name}
-                    </div>
-                    <div className="mt-1 text-[17px] font-extrabold leading-snug">
-                      <span className="u-underline">{p.title}</span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
+                  </div>
+
+                  {/* CATEGORIE (badge) */}
+                  <div className="mt-4 inline-flex bg-red-600 px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white">
+                    {p.category.name}
+                  </div>
+
+                  {/* TITLU */}
+                  <div className="mt-3 text-[22px] font-extrabold leading-tight">
+                    <span className="u-underline">{p.title}</span>
+                  </div>
+
+                  {/* AUTOR */}
+                  <div className="mt-3 text-[12px] font-normal tracking-wide text-gray-500">
+                    BY {p.author} ·{" "}
+                    {new Date(p.publishedAt).toLocaleDateString("ro-RO")}
+                  </div>
+                </Link>
+              ))}
             </div>
           </div>
 
           {/* DREAPTA – PE SCURT */}
-          <div className="md:col-span-3">
+          <div>
             <SectionTitle title="Pe scurt" href="#" />
 
             <div className="mt-5 space-y-7">
@@ -313,13 +238,13 @@ export default function Home() {
                   className="group flex gap-5"
                 >
                   <div className="min-w-0">
-                    <div className="text-[12px] font-bold uppercase tracking-wide text-gray-500">
+                    <div className="inline-flex bg-red-600 px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white">
                       {p.category.name}
                     </div>
-                    <div className="mt-1 text-[17px] font-extrabold leading-snug">
+                    <div className="mt-1 text-[18px] md:text-[19px] font-extrabold leading-snug">
                       <span className="u-underline">{p.title}</span>
                     </div>
-                    <div className="mt-2 text-sm font-semibold text-gray-400">
+                    <div className="mt-2 text-xs font-normal text-gray-400">
                       BY {p.author} ·{" "}
                       {new Date(p.publishedAt).toLocaleDateString("ro-RO")}
                     </div>
@@ -332,15 +257,23 @@ export default function Home() {
       </section>
 
       {/* ===== SECȚIUNEA 2 (dark, full-bleed) ===== */}
-      <section className=" bg-slate-950">
+      <section className="bg-[#0B2A45] dark:bg-[#0b131a]">
         <div className="min-h-[calc(100vh-var(--header-h,64px))] py-12">
           <div className="mx-auto max-w-6xl px-4">
-            <SectionTitle title="Articole recomandate" href="#" light />
+            <div className="flex items-end justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="h-[3px] w-8 bg-red-600" />
+                <h2 className="text-sm font-extrabold uppercase tracking-wide text-white">
+                  Articole recomandate
+                </h2>
+              </div>
+            </div>
 
             <div className="mt-7 grid gap-8 md:grid-cols-12 md:items-start">
               {/* stânga */}
               <div className="md:col-span-6">
                 <Tag>{featured.category.name}</Tag>
+
                 <Link
                   href={`/stire/${featured.slug}`}
                   className="mt-4 block text-4xl font-extrabold leading-tight text-white hover:underline"
@@ -354,11 +287,8 @@ export default function Home() {
                 <div className="mt-6 grid gap-4 sm:grid-cols-2">
                   {featuredExtra.slice(0, 2).map((p) => (
                     // ❌ scos rounded-xl
-                    <div
-                      key={p.id}
-                      className="border border-white/10 bg-white/5 p-4"
-                    >
-                      <div className="text-[11px] font-bold uppercase tracking-wide text-white/60">
+                    <div key={p.id} className="p-4">
+                      <div className="mt-4 inline-flex bg-red-600 px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white">
                         {p.category.name}
                       </div>
                       <Link
@@ -421,11 +351,8 @@ export default function Home() {
                 <div className="mt-8 grid gap-6 md:grid-cols-2">
                   {featuredExtra.slice(2, 4).map((p) => (
                     // ❌ scos rounded-2xl
-                    <div
-                      key={p.id}
-                      className="border border-white/10 bg-white/5 p-5"
-                    >
-                      <div className="text-[11px] font-bold uppercase tracking-wide text-white/60">
+                    <div key={p.id} className="bg-white/5 p-5">
+                      <div className="inline-flex bg-red-600 px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white">
                         {p.category.name}
                       </div>
                       <Link
@@ -452,16 +379,15 @@ export default function Home() {
 
         <div className="mt-7 grid gap-6 md:grid-cols-12 md:items-start">
           {/* 2 mari */}
-          <div className="md:col-span-7 space-y-6">
+          <div className="md:col-span-8 space-y-6">
             {cat3Big.map((p) => (
               <BigCard key={p.id} p={p} />
             ))}
           </div>
 
           {/* listă mică */}
-          <div className="md:col-span-5">
-            {/* ❌ scos rounded-2xl */}
-            <div className="border bg-[#0b1b2a] p-5 text-white">
+          <div className="md:col-span-4 sticky top-24 self-start">
+            <div className="bg-[#0B2A45] dark:bg-[#0b1b2a] p-5 text-white">
               <div className="text-sm font-extrabold uppercase tracking-wide">
                 Mai mult din {cat3.name}
               </div>
@@ -476,7 +402,7 @@ export default function Home() {
       </section>
 
       {/* ===== ULTIMA SECȚIUNE ===== */}
-      <section className="mx-auto mt-12 max-w-6xl px-4 py-10 pb-12 min-h-[calc(100vh-var(--header-h,64px))]">
+      <section className="mx-auto mt-12 max-w-6xl px-4 py-10 min-h-[calc(100vh-var(--header-h,64px))]">
         <SectionTitle
           title={lastCat.name}
           href={`/categorie/${lastCat.slug}`}
@@ -501,7 +427,7 @@ export default function Home() {
           </div>
 
           {/* DREAPTA */}
-          <div className="md:col-span-4">
+          <div className="md:col-span-4 sticky top-24 self-start">
             <div
               className={cn(
                 "space-y-4 sticky",

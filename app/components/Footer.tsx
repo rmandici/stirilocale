@@ -64,7 +64,7 @@ function IconTikTok(props: React.SVGProps<SVGSVGElement>) {
 
 export function Footer() {
   return (
-    <footer className="mt-10 border-t border-white/10 bg-[#0B2A45] text-white">
+    <footer className="border-t border-white/10 bg-[#0B2A45] dark:bg-[#0b131a] text-white">
       <div className="mx-auto max-w-[80rem] px-4 py-10">
         <div className="flex flex-col items-center gap-6">
           {/* Links */}

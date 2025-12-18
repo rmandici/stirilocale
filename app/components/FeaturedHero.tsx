@@ -19,22 +19,29 @@ function fmtDate(iso: string) {
 }
 
 export function FeaturedHero({ post }: { post: Post }) {
-  const imgs = useMemo(
-    () => (post.images?.length ? post.images : [post.image]),
-    [post.images, post.image]
-  );
+  const imgs = useMemo(() => {
+    const arr = post.images?.length
+      ? post.images
+      : post.image
+      ? [post.image]
+      : [];
+    return arr.filter(Boolean);
+  }, [post.images, post.image]);
+
   const [idx, setIdx] = useState(0);
 
   useEffect(() => {
     if (imgs.length <= 1) return;
+
     const t = setInterval(() => {
       setIdx((v) => (v + 1) % imgs.length);
     }, 4500);
+
     return () => clearInterval(t);
   }, [imgs.length]);
 
   return (
-    <section className="group w-full overflow-hidden bg-white shadow-sm">
+    <section className="group w-full">
       <Link href={`/stire/${post.slug}`} className="block">
         {/* ===== MOBILE ===== */}
         <div className="md:hidden">
@@ -49,8 +56,8 @@ export function FeaturedHero({ post }: { post: Post }) {
             />
           </div>
 
-          <div className="p-5">
-            <div className="text-xs uppercase tracking-wide text-gray-500">
+          <div className="pt-4">
+            <div className="inline-flex bg-red-600 px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white">
               {post.category.name}
             </div>
 
@@ -60,53 +67,45 @@ export function FeaturedHero({ post }: { post: Post }) {
 
             <p className="mt-3 text-base text-gray-600">{post.excerpt}</p>
 
-            <div className="mt-4 text-xs text-gray-500">
-              {post.author ? `${post.author} • ` : ""}
+            <div className="mt-4 text-xs text-gray-400">
+              BY {post.author ? `${post.author} • ` : ""}
               {fmtDate(post.publishedAt)}
             </div>
           </div>
         </div>
 
-        {/* ===== DESKTOP (TOP STORY “PE LUNG”) ===== */}
+        {/* ===== DESKTOP ===== */}
         <div className="hidden md:block">
-          <div className=" pb-6">
-            <h2 className="mt-4 text-4xl font-extrabold leading-[1.05]">
+          <div className="pt-2">
+            {/* titlu mare */}
+            <h2 className="mt-5 text-[52px] font-extrabold leading-[1.02] tracking-tight">
               <span className="u-underline">{post.title}</span>
             </h2>
 
-            <p className="mt-4 max-w-[60ch] text-base text-gray-600">
-              {post.excerpt}
-            </p>
-
-            <div className="mt-5 flex items-center gap-3 text-xs text-gray-500">
-              {post.author ? (
-                <span className="font-semibold">{post.author}</span>
-              ) : null}
-              <span>•</span>
-              <span>{fmtDate(post.publishedAt)}</span>
+            {/* meta mic, fara bold */}
+            <div className="mt-3 text-[12px] font-normal tracking-wide text-gray-500">
+              {post.author ? `BY ${post.author} · ` : ""}
+              {fmtDate(post.publishedAt)}
             </div>
-          </div>
 
-          {/* imagine mare dedesubt */}
-          <div className="relative aspect-[4/3] overflow-hidden">
-            <div className="absolute inset-0 transition-transform duration-700 ease-out group-hover:scale-[1.02]">
+            {/* imagine FULL WIDTH, inaltime controlata */}
+            <div className="mt-6 relative w-full overflow-hidden md:h-[420px]">
               <Image
                 src={imgs[idx]}
                 alt={post.title}
                 fill
-                className="object-cover"
-                sizes="(max-width: 480px) 60vw, 760px"
+                className="object-cover object-center"
+                sizes="(max-width: 1024px) 100vw, 50vw"
                 priority
               />
             </div>
 
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
-          </div>
-
-          <div className="px-8 py-6">
-            <span className="inline-flex items-center rounded-md bg-black px-4 py-2 text-sm font-semibold text-white">
-              Citește articolul →
-            </span>
+            {/* excerpt jos (optional) */}
+            {post.excerpt ? (
+              <p className="mt-6 max-w-[70ch] text-[17px] leading-relaxed text-gray-700">
+                {post.excerpt}
+              </p>
+            ) : null}
           </div>
         </div>
       </Link>

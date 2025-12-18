@@ -1,10 +1,9 @@
 export const categories = [
-  { slug: "categorie-1", name: "Categorie 1" },
-  { slug: "categorie-2", name: "Categorie 2" },
-  { slug: "categorie-3", name: "Categorie 3" },
-  { slug: "categorie-4", name: "Categorie 4" },
-  { slug: "categorie-5", name: "Categorie 5" },
-  { slug: "video", name: "Video" },
+  { slug: "categorie-1", name: "Local" },
+  { slug: "categorie-2", name: "Politica" },
+  { slug: "categorie-3", name: "Actualitate" },
+  { slug: "categorie-4", name: "Sport" },
+  { slug: "categorie-5", name: "Ultimă oră" },
 ] as const;
 
 export type CategorySlug = (typeof categories)[number]["slug"];

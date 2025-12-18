@@ -8,6 +8,8 @@ import { MobileDrawer } from "./MobileDrawer";
 import { HamburgerButton } from "./HamburgerButton";
 import { DesktopNavDropdown } from "./DesktopNavDropdown";
 import { getLatestPostsByCategory } from "./getPosts";
+import Image from "next/image";
+import { ThemeToggle } from "./theme-toggle";
 
 function IconSearch(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -23,6 +25,68 @@ function IconSearch(props: React.SVGProps<SVGSVGElement>) {
         strokeWidth="2"
         strokeLinecap="round"
       />
+    </svg>
+  );
+}
+
+function SocialIcon({ children }: { children: React.ReactNode }) {
+  return (
+    <a
+      href="#"
+      className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 hover:bg-white/15"
+      aria-label="Social"
+    >
+      {children}
+    </a>
+  );
+}
+
+function IconFacebook(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
+      <path d="M13.5 22v-8h2.7l.4-3h-3.1V9.1c0-.9.2-1.5 1.5-1.5H16.8V5a25 25 0 0 0-2.7-.1c-2.7 0-4.6 1.6-4.6 4.6V11H6.7v3h2.8v8h4z" />
+    </svg>
+  );
+}
+
+function IconInstagram(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5Z"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path d="M17.5 6.5h.01" stroke="currentColor" strokeWidth="3" />
+    </svg>
+  );
+}
+
+function IconX(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
+      <path d="M18.9 3H21l-6.6 7.6L22 21h-6.5l-5.1-6.1L5 21H3l7.1-8.2L2.7 3H9.3l4.6 5.4L18.9 3Zm-2.3 16h1.7L7.5 4.9H5.7L16.6 19Z" />
+    </svg>
+  );
+}
+
+function IconYouTube(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
+      <path d="M21.6 7.2a3 3 0 0 0-2.1-2.1C17.7 4.6 12 4.6 12 4.6s-5.7 0-7.5.5A3 3 0 0 0 2.4 7.2 31 31 0 0 0 2 12a31 31 0 0 0 .4 4.8 3 3 0 0 0 2.1 2.1c1.8.5 7.5.5 7.5.5s5.7 0 7.5-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 22 12a31 31 0 0 0-.4-4.8ZM10 15.3V8.7L15.7 12 10 15.3Z" />
+    </svg>
+  );
+}
+
+function IconTikTok(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
+      <path d="M16.5 3c.4 2.6 1.9 4.1 4.5 4.5V11c-1.7 0-3.2-.5-4.5-1.4V16c0 4-3.3 7-7.4 6.4-2.7-.4-4.9-2.6-5.3-5.3C3.2 12.9 6.2 9.6 10.2 9.6c.3 0 .6 0 .9.1v3.7c-.3-.1-.6-.2-.9-.2-1.9 0-3.3 1.7-2.9 3.6.2 1 .9 1.8 1.9 2 .2 0 .4.1.6.1 1.7 0 3-1.3 3-3V3h3.7Z" />
     </svg>
   );
 }
@@ -49,8 +113,8 @@ export function Header() {
   } | null>(null);
   const closeTimer = useRef<number | null>(null);
 
-  const topCatsDesktop = useMemo(() => categories.slice(0, 6), []);
-  const navCatsDesktop = useMemo(() => categories.slice(0, 6), []);
+  const topCatsDesktop = useMemo(() => categories.slice(0, 5), []);
+  const navCatsDesktop = useMemo(() => categories.slice(0, 5), []);
   const navCatsMobile = useMemo(() => categories.slice(0, 10), []);
 
   const headerRef = useRef<HTMLElement | null>(null);
@@ -103,8 +167,8 @@ export function Header() {
   return (
     <>
       <header ref={headerRef} className="z-40">
-        {/* DESKTOP: TOP BAR (negru) */}
-        <div className="hidden md:block bg-black text-white">
+        {/* DESKTOP: TOP BAR (albastru) */}
+        <div className="hidden md:block bg-[#0B2A45] text-white">
           <div className="mx-auto max-w-full px-4">
             <div className="flex h-10 items-center justify-between">
               <nav className="flex items-center gap-5 text-[12px] font-semibold">
@@ -120,34 +184,21 @@ export function Header() {
               </nav>
 
               <div className="flex items-center gap-3 text-[20px] font-extrabold">
-                <Link
-                  href="#"
-                  aria-label="Facebook"
-                  className="opacity-90 hover:opacity-100"
-                >
-                  f
-                </Link>
-                <Link
-                  href="#"
-                  aria-label="X"
-                  className="opacity-90 hover:opacity-100"
-                >
-                  X
-                </Link>
-                <Link
-                  href="#"
-                  aria-label="YouTube"
-                  className="opacity-90 hover:opacity-100"
-                >
-                  ▶
-                </Link>
-                <Link
-                  href="#"
-                  aria-label="TikTok"
-                  className="opacity-90 hover:opacity-100"
-                >
-                  ♪
-                </Link>
+                <SocialIcon>
+                  <IconFacebook className="h-4 w-4" />
+                </SocialIcon>
+                <SocialIcon>
+                  <IconInstagram className="h-5 w-5" />
+                </SocialIcon>
+                <SocialIcon>
+                  <IconX className="h-4 w-4" />
+                </SocialIcon>
+                <SocialIcon>
+                  <IconYouTube className="h-5 w-5" />
+                </SocialIcon>
+                <SocialIcon>
+                  <IconTikTok className="h-4 w-4" />
+                </SocialIcon>
               </div>
             </div>
           </div>
@@ -157,22 +208,33 @@ export function Header() {
         <div className="md:hidden bg-red-700 text-white">
           <div className="mx-auto max-w-[80rem] px-4">
             <div className="flex h-14 items-center justify-between">
-              <HamburgerButton
-                open={menuOpen}
-                ariaLabel={menuOpen ? "Închide meniul" : "Deschide meniul"}
-                onClick={() => {
-                  if (menuOpen) {
-                    setMenuOpen(false);
-                    return;
-                  }
-                  setDrawerMode("menu");
-                  setMenuOpen(true);
-                }}
-              />
+              <div className="flex items-center gap-2">
+                <HamburgerButton
+                  open={menuOpen}
+                  ariaLabel={menuOpen ? "Închide meniul" : "Deschide meniul"}
+                  onClick={() => {
+                    if (menuOpen) {
+                      setMenuOpen(false);
+                      return;
+                    }
+                    setDrawerMode("menu");
+                    setMenuOpen(true);
+                  }}
+                />
+              </div>
 
-              <Link href="/" className="text-2xl font-extrabold tracking-tight">
-                stirilocale
-              </Link>
+              <div>
+                <Link href="/" className="flex items-center">
+                  <Image
+                    src="/logo_callatis_new.png"
+                    alt="Callatis"
+                    width={110}
+                    height={36}
+                    priority
+                    className="h-14 w-auto"
+                  />
+                </Link>
+              </div>
 
               <div className="flex items-center gap-2">
                 <button
@@ -183,31 +245,26 @@ export function Header() {
                   <IconSearch className="h-5 w-5" />
                 </button>
 
-                <button
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-md hover:bg-white/10"
-                  aria-label="Setări"
-                >
-                  ⚙
-                </button>
+                <ThemeToggle />
               </div>
             </div>
           </div>
 
           {!menuOpen && (
-            <div className="border-t border-white/10">
+            <div className="border-t border-white/10 ">
               <div
                 className={[
-                  "mx-auto max-w-[80rem] px-2",
+                  "mx-auto max-w-[80rem] px-4",
                   "overflow-x-auto whitespace-nowrap",
                   "[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
                 ].join(" ")}
               >
-                <div className="flex items-center gap-5 px-2 py-2">
+                <div className="inline-flex justify-center min-w-full items-center gap-8 py-2">
                   {navCatsMobile.map((c) => (
                     <Link
                       key={c.slug}
                       href={`/categorie/${c.slug}`}
-                      className="text-[13px] font-semibold opacity-95 hover:opacity-100"
+                      className="text-[15px] font-semibold opacity-95 hover:opacity-100"
                     >
                       {c.name}
                     </Link>
@@ -221,22 +278,28 @@ export function Header() {
         {/* DESKTOP: roșu */}
         <div className="hidden md:block bg-red-700 text-white">
           <div className="relative mx-auto max-w-full px-4">
-            <div className="flex h-16 items-center">
-              <div className="flex items-center gap-4">
-                <Link
-                  href="/"
-                  className="text-2xl font-extrabold tracking-tight"
-                >
-                  stirilocale
+            <div className="flex h-16 items-center gap-4">
+              {/* STÂNGA */}
+              <div className="flex items-center gap-4 shrink-0">
+                <Link href="/" className="flex items-center">
+                  <Image
+                    src="/logo_callatis_new.png"
+                    alt="Callatis"
+                    width={110}
+                    height={36}
+                    priority
+                    className="h-16 w-auto"
+                  />
                 </Link>
               </div>
 
+              {/* CENTRU (se strânge primul) */}
               <div
-                className="absolute inset-0 flex items-center justify-center"
+                className="flex-1 min-w-0 flex items-center justify-center"
                 onMouseEnter={cancelCloseHover}
                 onMouseLeave={scheduleCloseHover}
               >
-                <nav className="flex items-center gap-8 text-[13px] font-extrabold uppercase whitespace-nowrap">
+                <nav className="flex items-center gap-8 text-[13px] font-extrabold uppercase whitespace-nowrap overflow-hidden">
                   <Link href="/" className="opacity-95 hover:opacity-100">
                     Acasă
                   </Link>
@@ -287,8 +350,11 @@ export function Header() {
                 )}
               </div>
 
-              <div className="ml-auto flex items-center gap-3">
-                <CurrencyChip />
+              {/* DREAPTA */}
+              <div className="flex items-center gap-3 shrink-0">
+                <div className="hidden xl:flex items-center gap-3 shrink-0">
+                  <CurrencyChip />
+                </div>
 
                 <button
                   onClick={() => setDesktopSearchOpen((v) => !v)}
@@ -298,12 +364,7 @@ export function Header() {
                   <IconSearch className="h-5 w-5" />
                 </button>
 
-                <button
-                  className="inline-flex h-10 items-center justify-center rounded-full bg-white/10 px-3 text-[12px] font-bold hover:bg-white/15"
-                  aria-label="Opțiuni"
-                >
-                  ⚙
-                </button>
+                <ThemeToggle />
               </div>
             </div>
           </div>

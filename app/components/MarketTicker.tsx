@@ -22,19 +22,32 @@ function TickerRow({ clone = false }: { clone?: boolean }) {
             key={(clone ? "c-" : "") + it.symbol}
             className="flex items-baseline gap-3 whitespace-nowrap"
           >
-            <span className="text-xs font-semibold tracking-wide text-gray-800">
+            <span className="text-xs font-semibold tracking-wide text-gray-800 dark:text-zinc-100">
               {it.symbol}
             </span>
-            <span className="text-xs text-gray-600">${it.price}</span>
+
+            <span className="text-xs text-gray-600 dark:text-zinc-400">
+              ${it.price}
+            </span>
+
             <span
-              className={`text-xs font-semibold ${
-                up ? "text-green-600" : "text-red-600"
-              }`}
+              className={[
+                "text-xs font-semibold",
+                up
+                  ? "text-green-600 dark:text-emerald-400"
+                  : "text-red-600 dark:text-rose-400",
+              ].join(" ")}
             >
               {it.change}
             </span>
+
             <span
-              className={`text-xs ${up ? "text-green-600" : "text-red-600"}`}
+              className={[
+                "text-xs",
+                up
+                  ? "text-green-600 dark:text-emerald-400"
+                  : "text-red-600 dark:text-rose-400",
+              ].join(" ")}
             >
               {it.delta}
             </span>
@@ -46,9 +59,8 @@ function TickerRow({ clone = false }: { clone?: boolean }) {
 }
 
 export function MarketTicker() {
-  // “două benzi” identice -> efect infinit fără pauze
   return (
-    <div className="border-b bg-white">
+    <div className="border-b border-black/10 bg-white dark:border-white/10 dark:bg-black/95">
       <div className="mx-auto max-w-[80rem] overflow-hidden">
         <div className="flex h-10 items-center">
           <div className="ticker-track flex">
