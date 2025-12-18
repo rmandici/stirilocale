@@ -226,7 +226,7 @@ export function Header() {
               <div>
                 <Link href="/" className="flex items-center">
                   <Image
-                    src="/logo_callatis_new.png"
+                    src="/callatis_logo_new.png"
                     alt="Callatis"
                     width={110}
                     height={36}
@@ -283,7 +283,7 @@ export function Header() {
               <div className="flex items-center justify-start">
                 <Link href="/" className="flex items-center">
                   <Image
-                    src="/logo_callatis_new.png"
+                    src="/callatis_logo_new.png"
                     alt="Callatis"
                     width={110}
                     height={36}
@@ -334,6 +334,7 @@ export function Header() {
                       categorySlug={hoverCat.slug}
                       variant={dropdownVariantFor(hoverCat.slug)}
                       posts={getLatestPostsByCategory(hoverCat.slug).map(
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         (p: any) => ({
                           slug: p.slug ?? p.id ?? "placeholder",
                           title: p.title ?? "Titlu articol (placeholder)",
