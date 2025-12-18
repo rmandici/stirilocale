@@ -278,9 +278,9 @@ export function Header() {
         {/* DESKTOP: roșu */}
         <div className="hidden md:block bg-red-700 text-white">
           <div className="relative mx-auto max-w-full px-4">
-            <div className="flex h-16 items-center gap-4">
+            <div className="grid h-16 items-center gap-4 md:grid-cols-[1fr_2fr_1fr]">
               {/* STÂNGA */}
-              <div className="flex items-center gap-4 shrink-0">
+              <div className="flex items-center justify-start">
                 <Link href="/" className="flex items-center">
                   <Image
                     src="/logo_callatis_new.png"
@@ -293,9 +293,9 @@ export function Header() {
                 </Link>
               </div>
 
-              {/* CENTRU (se strânge primul) */}
+              {/* CENTRU */}
               <div
-                className="flex-1 min-w-0 flex items-center justify-center"
+                className="min-w-0 flex items-center justify-center"
                 onMouseEnter={cancelCloseHover}
                 onMouseLeave={scheduleCloseHover}
               >
@@ -334,7 +334,6 @@ export function Header() {
                       categorySlug={hoverCat.slug}
                       variant={dropdownVariantFor(hoverCat.slug)}
                       posts={getLatestPostsByCategory(hoverCat.slug).map(
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         (p: any) => ({
                           slug: p.slug ?? p.id ?? "placeholder",
                           title: p.title ?? "Titlu articol (placeholder)",
@@ -351,8 +350,8 @@ export function Header() {
               </div>
 
               {/* DREAPTA */}
-              <div className="flex items-center gap-3 shrink-0">
-                <div className="hidden xl:flex items-center gap-3 shrink-0">
+              <div className="flex items-center justify-end gap-3">
+                <div className="hidden xl:flex items-center gap-3">
                   <CurrencyChip />
                 </div>
 
