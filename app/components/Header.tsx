@@ -97,7 +97,8 @@ function dropdownVariantFor(slug: string): DropdownVariant {
   if (slug === "categorie-3") return "two-hero";
   if (slug === "categorie-5") return "three-hero";
   if (slug === "categorie-1") return "hero-list";
-  if (slug === "video") return "two-hero";
+  if (slug === "categorie-4") return "two-hero";
+  if (slug === "categorie-2") return "three-hero";
   return "hero-2small";
 }
 
@@ -168,7 +169,7 @@ export function Header() {
     <>
       <header ref={headerRef} className="z-40">
         {/* DESKTOP: TOP BAR (albastru) */}
-        <div className="hidden md:block bg-[#0B2A45] text-white">
+        <div className="hidden md:block bg-[#0B2A45] dark:bg-[#0b131a] text-white">
           <div className="mx-auto max-w-full px-4">
             <div className="flex h-10 items-center justify-between">
               <nav className="flex items-center gap-5 text-[12px] font-semibold">

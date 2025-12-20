@@ -1,9 +1,9 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { posts } from "./data/posts";
-import { categories } from "./data/categories";
-import { StoryCard } from "./components/StoryCard";
+import { categories, CategorySlug } from "./data/categories";
 import { FeaturedHero } from "./components/FeaturedHero";
+import { AllPostsSection } from "./components/AllPostsSection";
 
 // ✅ le ai deja create
 import { CurrencyBox } from "./components/CurrencyBox";
@@ -58,7 +58,7 @@ function MiniStory({
       <div className="flex gap-3">
         {showThumb && (
           // ❌ scos rounded-md
-          <div className="h-16 w-24 flex-shrink-0 overflow-hidde">
+          <div className="h-16 w-24 flex-shrink-0 overflow-hidden">
             <img
               src={p.image}
               alt={p.title}
@@ -94,7 +94,9 @@ function BigCard({ p, tall }: { p: (typeof posts)[number]; tall?: boolean }) {
   return (
     // ❌ scos rounded-2xl
     <div className="">
-      <div className="text-xs text-gray-500">{p.category.name}</div>
+      <div className="mt-4 inline-flex bg-red-600 px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white">
+        {p.category.name}
+      </div>
       <Link
         href={`/stire/${p.slug}`}
         className="mt-2 block text-2xl font-extrabold leading-snug hover:underline"
@@ -127,42 +129,63 @@ export default function Home() {
     (a, b) => +new Date(b.publishedAt) - +new Date(a.publishedAt)
   );
 
+  // ===== helpers (evităm dubluri) =====
+
+  // ===== SECȚIUNEA 1 =====
   const featured = latest[0];
   const rest = latest.slice(1);
 
-  // ===== helpers (evităm dubluri) =====
-  const used = new Set<string>([featured.id]);
-  const pickUnique = (pool: typeof rest, n: number) => {
-    const out: typeof rest = [];
-    for (const p of pool) {
-      if (out.length >= n) break;
-      if (used.has(p.id)) continue;
-      used.add(p.id);
-      out.push(p);
-    }
-    return out;
-  };
+  // ===== SECȚIUNEA 1 (cronologic, fără dubluri) =====
+  const bestOf = rest.slice(0, 2); // penultimul + antepenultimul
+  const headlines = rest.slice(2, 7); // următoarele 5
 
-  // ===== SECȚIUNEA 1 =====
-  const bestOf = pickUnique(rest, 3);
-  const headlines = pickUnique(rest, 8);
+  // marcăm ce s-a consumat în secțiunea 1
+  const used = new Set<string>([
+    featured.id,
+    ...bestOf.map((p) => p.id),
+    ...headlines.map((p) => p.id),
+  ]);
 
-  // ===== SECȚIUNEA 2 (dark) =====
-  const featuredGrid = pickUnique(rest, 4);
-  const featuredExtra = pickUnique(rest, 4);
+  // ===== SECȚIUNEA 2: doar Politică (cronologic) =====
+  const POLITICA_SLUG: CategorySlug = "categorie-2";
 
-  // ===== SECȚIUNEA 3 (categorie-3) =====
-  const cat3 = categories[2];
-  const cat3Pool = rest.filter((p) => p.category.slug === cat3.slug);
-  const cat3Big = pickUnique(cat3Pool, 2);
-  const cat3More = pickUnique(cat3Pool, 6);
+  const politicsPool = rest.filter(
+    (p) =>
+      !used.has(p.id) &&
+      (p.category?.slug === POLITICA_SLUG ||
+        p.category?.name?.toLowerCase() === "politică" ||
+        p.category?.name?.toLowerCase() === "politica")
+  );
 
-  // ===== ULTIMA SECȚIUNE (categorie-5) =====
-  const lastCat = categories[4];
-  const lastPool = rest.filter((p) => p.category.slug === lastCat.slug);
+  // stânga (articolul principal din secțiunea 2)
+  const politicsFeatured = politicsPool[0];
 
-  const lastBig = pickUnique(lastPool, 3);
-  const lastMore = pickUnique(lastPool, 10);
+  // următoarele 4 (grid jos)
+  const featuredGrid = politicsPool.slice(1, 5);
+
+  // următoarele 4 (featuredExtra: 2 mici stânga + 2 jos)
+  const featuredExtra = politicsPool.slice(5, 9);
+
+  // marchezi ca folosite (ca să nu se repete în secțiuni viitoare)
+  [politicsFeatured, ...featuredGrid, ...featuredExtra].forEach((p) => {
+    if (p) used.add(p.id);
+  });
+
+  // ===== SECȚIUNEA 3: doar Actualitate =====
+  const ACTUALITATE_SLUG: CategorySlug = "categorie-3";
+
+  const cat3 = categories.find((c) => c.slug === ACTUALITATE_SLUG)!;
+
+  const actualitatePool = rest.filter(
+    (p) => !used.has(p.id) && p.category?.slug === ACTUALITATE_SLUG
+  );
+
+  // 2 mari + încă 5 în box
+  const cat3Big = actualitatePool.slice(0, 2);
+  const cat3More = actualitatePool.slice(2, 7);
+
+  // marchează ca folosite
+  [...cat3Big, ...cat3More].forEach((p) => used.add(p.id));
 
   const mostRead = [...posts].sort((a, b) => b.views - a.views);
 
@@ -257,122 +280,123 @@ export default function Home() {
       </section>
 
       {/* ===== SECȚIUNEA 2 (dark, full-bleed) ===== */}
-      <section className="bg-[#0B2A45] dark:bg-[#0b131a]">
-        <div className="min-h-[calc(100vh-var(--header-h,64px))] py-12">
-          <div className="mx-auto max-w-6xl px-4">
-            <div className="flex items-end justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="h-[3px] w-8 bg-red-600" />
-                <h2 className="text-sm font-extrabold uppercase tracking-wide text-white">
-                  Articole recomandate
-                </h2>
-              </div>
-            </div>
-
-            <div className="mt-7 grid gap-8 md:grid-cols-12 md:items-start">
-              {/* stânga */}
-              <div className="md:col-span-6">
-                <Tag>{featured.category.name}</Tag>
-
-                <Link
-                  href={`/stire/${featured.slug}`}
-                  className="mt-4 block text-4xl font-extrabold leading-tight text-white hover:underline"
-                >
-                  {featured.title}
-                </Link>
-                <p className="mt-4 text-base text-white/75">
-                  {featured.excerpt}
-                </p>
-
-                <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                  {featuredExtra.slice(0, 2).map((p) => (
-                    // ❌ scos rounded-xl
-                    <div key={p.id} className="p-4">
-                      <div className="mt-4 inline-flex bg-red-600 px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white">
-                        {p.category.name}
-                      </div>
-                      <Link
-                        href={`/stire/${p.slug}`}
-                        className="mt-2 block text-base font-extrabold leading-snug text-white hover:underline"
-                      >
-                        {p.title}
-                      </Link>
-                    </div>
-                  ))}
+      {politicsFeatured && (
+        <section className="bg-[#0B2A45] dark:bg-[#0b131a]">
+          <div className="min-h-[calc(100vh-var(--header-h,64px))] py-12">
+            <div className="mx-auto max-w-6xl px-4">
+              <div className="flex items-end justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-[3px] w-8 bg-red-600" />
+                  <h2 className="text-sm font-extrabold uppercase tracking-wide text-white">
+                    Articole Politică
+                  </h2>
                 </div>
               </div>
 
-              {/* dreapta: imagine mare */}
-              <div className="md:col-span-6">
-                <Link
-                  href={`/stire/${featured.slug}`}
-                  className="block overflow-hidden"
-                >
-                  <img
-                    src={featured.image}
-                    alt={featured.title}
-                    className="h-[360px] w-full object-cover"
-                  />
-                </Link>
-              </div>
+              <div className="mt-7 grid gap-8 md:grid-cols-12 md:items-start">
+                {/* stânga */}
+                <div className="md:col-span-6">
+                  <Tag>{politicsFeatured.category.name}</Tag>
 
-              {/* grid jos */}
-              <div className="md:col-span-12">
-                <div className="mt-2 grid gap-6 md:grid-cols-4">
-                  {featuredGrid.map((p) => (
-                    <div key={p.id} className="text-white">
-                      <Link
-                        href={`/stire/${p.slug}`}
-                        className="block overflow-hidden"
-                      >
-                        <img
-                          src={p.image}
-                          alt={p.title}
-                          className="h-48 w-full object-cover"
-                        />
-                      </Link>
+                  <Link
+                    href={`/stire/${politicsFeatured.slug}`}
+                    className="mt-4 block text-4xl font-extrabold leading-tight text-white hover:underline"
+                  >
+                    {politicsFeatured.title}
+                  </Link>
+                  <p className="mt-4 text-base text-white/75">
+                    {politicsFeatured.excerpt}
+                  </p>
 
-                      <div className="mt-3">
-                        <Tag>{p.category.name}</Tag>
+                  <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                    {featuredExtra.slice(0, 2).map((p) => (
+                      // ❌ scos rounded-xl
+                      <div key={p.id} className="p-4">
+                        <div className="mt-4 inline-flex bg-red-600 px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white">
+                          {p.category.name}
+                        </div>
                         <Link
                           href={`/stire/${p.slug}`}
-                          className="mt-2 block text-lg font-extrabold leading-snug hover:underline"
+                          className="mt-2 block text-base font-extrabold leading-snug text-white hover:underline"
                         >
                           {p.title}
                         </Link>
-                        <div className="mt-1 text-xs text-white/60">
-                          {p.author}
-                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
 
-                <div className="mt-8 grid gap-6 md:grid-cols-2">
-                  {featuredExtra.slice(2, 4).map((p) => (
-                    // ❌ scos rounded-2xl
-                    <div key={p.id} className="bg-white/5 p-5">
-                      <div className="inline-flex bg-red-600 px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white">
-                        {p.category.name}
+                {/* dreapta: imagine mare */}
+                <div className="md:col-span-6">
+                  <Link
+                    href={`/stire/${politicsFeatured.slug}`}
+                    className="block overflow-hidden"
+                  >
+                    <img
+                      src={politicsFeatured.image}
+                      alt={politicsFeatured.title}
+                      className="h-[360px] w-full object-cover"
+                    />
+                  </Link>
+                </div>
+
+                {/* grid jos */}
+                <div className="md:col-span-12">
+                  <div className="mt-2 grid gap-6 md:grid-cols-4">
+                    {featuredGrid.map((p) => (
+                      <div key={p.id} className="text-white">
+                        <Link
+                          href={`/stire/${p.slug}`}
+                          className="block overflow-hidden"
+                        >
+                          <img
+                            src={p.image}
+                            alt={p.title}
+                            className="h-48 w-full object-cover"
+                          />
+                        </Link>
+
+                        <div className="mt-3">
+                          <Tag>{p.category.name}</Tag>
+                          <Link
+                            href={`/stire/${p.slug}`}
+                            className="mt-2 block text-lg font-extrabold leading-snug hover:underline"
+                          >
+                            {p.title}
+                          </Link>
+                          <div className="mt-1 text-xs text-white/60">
+                            {p.author}
+                          </div>
+                        </div>
                       </div>
-                      <Link
-                        href={`/stire/${p.slug}`}
-                        className="mt-2 block text-xl font-extrabold leading-snug text-white hover:underline"
-                      >
-                        {p.title}
-                      </Link>
-                      <p className="mt-2 text-sm text-white/70 line-clamp-2">
-                        {p.excerpt}
-                      </p>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+
+                  <div className="mt-8 grid gap-6 md:grid-cols-2">
+                    {featuredExtra.slice(2, 4).map((p) => (
+                      // ❌ scos rounded-2xl
+                      <div key={p.id} className="bg-white/5 p-5">
+                        <div className="inline-flex bg-red-600 px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white">
+                          {p.category.name}
+                        </div>
+                        <Link
+                          href={`/stire/${p.slug}`}
+                          className="mt-2 block text-xl font-extrabold leading-snug text-white hover:underline"
+                        >
+                          {p.title}
+                        </Link>
+                        <p className="mt-2 text-sm text-white/70 line-clamp-2">
+                          {p.excerpt}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
-
+        </section>
+      )}
       {/* ===== SECȚIUNEA 3 ===== */}
       <section className="mx-auto mt-10 max-w-6xl px-4 py-10 min-h-[calc(100vh-var(--header-h,64px))]">
         <SectionTitle title={cat3.name} href={`/categorie/${cat3.slug}`} />
@@ -387,7 +411,7 @@ export default function Home() {
 
           {/* listă mică */}
           <div className="md:col-span-4 sticky top-24 self-start">
-            <div className="bg-[#0B2A45] dark:bg-[#0b1b2a] p-5 text-white">
+            <div className="bg-[#0B2A45] dark:bg-[#0b131a] p-5 text-white">
               <div className="text-sm font-extrabold uppercase tracking-wide">
                 Mai mult din {cat3.name}
               </div>
@@ -401,39 +425,19 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== ULTIMA SECȚIUNE ===== */}
-      <section className="mx-auto mt-12 max-w-6xl px-4 py-10 min-h-[calc(100vh-var(--header-h,64px))]">
-        <SectionTitle
-          title={lastCat.name}
-          href={`/categorie/${lastCat.slug}`}
-        />
+      {/* ===== ULTIMA SECȚIUNE: TOATE ARTICOLELE ===== */}
+      <section className="mx-auto mt-12 max-w-6xl px-4 py-10">
+        <SectionTitle title="Toate articolele" />
 
         <div className="mt-7 grid gap-8 md:grid-cols-12 md:items-start">
-          {/* STÂNGA */}
+          {/* STÂNGA: listă cu load more */}
           <div className="md:col-span-8">
-            {lastBig[0] && <BigCard p={lastBig[0]} tall />}
-
-            <div className="mt-6 grid gap-6 md:grid-cols-2">
-              {lastBig.slice(1, 3).map((p) => (
-                <BigCard key={p.id} p={p} />
-              ))}
-            </div>
-
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              {lastMore.slice(0, 8).map((p) => (
-                <StoryCard key={p.id} post={p} />
-              ))}
-            </div>
+            <AllPostsSection posts={latest} rowsPerPage={3} cols={2} />
           </div>
 
-          {/* DREAPTA */}
-          <div className="md:col-span-4 sticky top-24 self-start">
-            <div
-              className={cn(
-                "space-y-4 sticky",
-                "top-[calc(var(--header-h,64px)+24px)]"
-              )}
-            >
+          {/* DREAPTA: rămâne la fel */}
+          <div className="md:col-span-4 self-start sticky top-24 space-y-4">
+            <div className="">
               <MostRead posts={mostRead} />
               <CurrencyBox />
             </div>

@@ -58,3 +58,34 @@ body {
     transition: none;
   }
 }
+
+/* ===== WP embeds responsive ===== */
+.prose :where(iframe, video) {
+  max-width: 100%;
+}
+
+.prose .wp-block-embed,
+.prose .wp-block-video,
+.prose .wp-block-image {
+  margin: 1.25rem 0;
+}
+
+/* YouTube/Vimeo iframe wrapper (Gutenberg de obicei pune embed în figure) */
+.prose .wp-block-embed__wrapper {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%; /* 16:9 */
+}
+
+.prose .wp-block-embed__wrapper iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Self-hosted video */
+.prose .wp-block-video video {
+  width: 100%;
+  height: auto;
+}
