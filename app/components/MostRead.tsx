@@ -1,9 +1,9 @@
 import Link from "next/link";
-import type { Post } from "../data/posts";
+import type { Post } from "../lib/wp";
 
 export function MostRead({ posts }: { posts: Post[] }) {
   return (
-    <div className=" p-4">
+    <div className="p-4">
       <h3 className="text-sm font-extrabold uppercase tracking-wide text-gray-900 dark:text-gray-200">
         Cele mai citite
       </h3>

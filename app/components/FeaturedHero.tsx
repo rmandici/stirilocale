@@ -78,7 +78,7 @@ export function FeaturedHero({ post }: { post: Post }) {
         <div className="hidden md:block">
           <div className="pt-2">
             {/* titlu mare */}
-            <h2 className="mt-5 text-[52px] font-extrabold leading-[1.02] tracking-tight">
+            <h2 className="mt-5 text-[42px] font-extrabold leading-[1.02] tracking-tight">
               <span className="u-underline">{post.title}</span>
             </h2>
 
@@ -101,11 +101,11 @@ export function FeaturedHero({ post }: { post: Post }) {
             </div>
 
             {/* excerpt jos (optional) */}
-            {post.excerpt ? (
+            {/* {post.excerpt ? (
               <p className="mt-6 max-w-[70ch] text-[17px] leading-relaxed text-gray-700">
                 {post.excerpt}
               </p>
-            ) : null}
+            ) : null} */}
           </div>
         </div>
       </Link>

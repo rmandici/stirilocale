@@ -4,8 +4,13 @@ const nextConfig: NextConfig = {
   /* config options here */
   images: {
     remotePatterns: [
-      { protocol: "https", hostname: "callatispress.ro" },
-      { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "cms.callatispress.ro", pathname: "/**" },
+      { protocol: "https", hostname: "images.unsplash.com", pathname: "/**" },
+      {
+        protocol: "https",
+        hostname: "callatispress.ro",
+        pathname: "/**",
+      },
     ],
   },
 };

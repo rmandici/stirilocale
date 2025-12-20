@@ -1,12 +1,17 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { posts } from "../../data/posts";
-import { categories } from "../../data/categories";
+
+import { posts as demoPosts } from "../../data/posts";
+import { categories as demoCategories } from "../../data/categories";
+
 import { MostRead } from "../../components/MostRead";
 import { CategoryRemaining } from "../../components/CategoryRemaining";
 
-// mic helper pt dată (opțional)
+import { getWpPosts } from "../../lib/wp";
+
+const WP_BASE = process.env.WP_BASE_URL;
+
 function fmtDate(iso: string) {
   try {
     return new Date(iso).toLocaleDateString("ro-RO");
@@ -15,7 +20,27 @@ function fmtDate(iso: string) {
   }
 }
 
-// ✅ IMPORTANT: async + params Promise (cum ai la tine)
+type WPCategory = { id: number; slug: string; name: string };
+
+async function getWpCategoryBySlug(slug: string): Promise<WPCategory | null> {
+  try {
+    if (!WP_BASE) return null;
+
+    const res = await fetch(
+      `${WP_BASE}/wp-json/wp/v2/categories?slug=${encodeURIComponent(
+        slug
+      )}&per_page=1`,
+      { next: { revalidate: 300 } }
+    );
+
+    if (!res.ok) return null;
+    const arr = (await res.json()) as WPCategory[];
+    return arr?.[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export default async function CategoryPage({
   params,
 }: {
@@ -23,28 +48,43 @@ export default async function CategoryPage({
 }) {
   const { slug } = await params;
 
-  const cat = categories.find((c) => c.slug === slug);
-  if (!cat) notFound();
+  // 1) WP categorie (pt titlu)
+  const wpCat = await getWpCategoryBySlug(slug);
 
-  const catPosts = posts
-    .filter((p) => p.category.slug === slug)
-    .sort((a, b) => +new Date(b.publishedAt) - +new Date(a.publishedAt));
+  // 2) WP postări deja filtrate de WP (NU mai filtrăm după p.category.slug)
+  const wpPosts = await getWpPosts({ perPage: 50, categorySlug: slug });
 
-  const mostRead = [...posts].sort((a, b) => b.views - a.views);
+  // 3) Fallback demo dacă WP nu e disponibil
+  const demoCat = demoCategories.find((c) => c.slug === slug) ?? null;
+
+  const cat = wpCat
+    ? { slug: wpCat.slug, name: wpCat.name }
+    : demoCat
+    ? { slug: demoCat.slug, name: demoCat.name }
+    : null;
+
+  if (!cat) return notFound();
+
+  const catPosts =
+    wpPosts.length > 0
+      ? wpPosts
+      : demoPosts
+          .filter((p) => p.category?.slug === slug)
+          .sort((a, b) => +new Date(b.publishedAt) - +new Date(a.publishedAt));
+
+  const mostRead = [...demoPosts].sort(
+    (a, b) => (b.views ?? 0) - (a.views ?? 0)
+  );
 
   const catFeatured = catPosts[0] ?? null;
-
-  // ✅ sus consumăm: featured + 3 => total 4
   const remaining = catPosts.slice(4);
 
   return (
     <main>
-      {/* ===== HERO + 3 ===== */}
       {catFeatured ? (
         <section className="bg-white text-gray-900 dark:bg-[#0b131a] dark:text-white">
           <div className="py-10">
             <div className="mx-auto max-w-6xl px-4">
-              {/* titlu categorie */}
               <div className="flex items-end justify-between gap-4">
                 <div>
                   <div className="h-[3px] w-12 bg-red-600" />
@@ -54,7 +94,6 @@ export default async function CategoryPage({
                 </div>
               </div>
 
-              {/* HERO: stânga text, dreapta imagine */}
               <div className="mt-8 grid gap-8 md:grid-cols-12 md:items-start">
                 <div className="md:col-span-5">
                   <Link
@@ -90,10 +129,9 @@ export default async function CategoryPage({
                 </div>
               </div>
 
-              {/* 3 articole */}
               <div className="mt-10 grid gap-8 md:grid-cols-3">
                 {catPosts.slice(1, 4).map((p) => (
-                  <article key={p.id}>
+                  <article key={p.id ?? p.slug}>
                     <Link href={`/stire/${p.slug}`} className="block">
                       <img
                         src={p.image}
@@ -124,20 +162,17 @@ export default async function CategoryPage({
         </section>
       ) : null}
 
-      {/* ===== RESTUL (o coloană) + MostRead în dreapta ===== */}
       <section className="bg-white text-gray-900 dark:bg-black dark:text-white">
         <div className="mx-auto max-w-6xl px-4 py-12">
           <div className="grid gap-10 md:grid-cols-12 md:items-start">
-            {/* STÂNGA: listă 1 col */}
             <div className="md:col-span-8">
               <div className="space-y-10">
                 <CategoryRemaining posts={remaining} step={3} />
               </div>
             </div>
 
-            {/* DREAPTA: MostRead sticky */}
             <div className="md:col-span-4 sticky top-24">
-              <div className=" space-y-4">
+              <div className="space-y-4">
                 <MostRead posts={mostRead} />
               </div>
             </div>

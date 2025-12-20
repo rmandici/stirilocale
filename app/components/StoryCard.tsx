@@ -1,18 +1,23 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { Post } from "../data/posts";
+import type { Post } from "../lib/wp";
 
 export function StoryCard({ post }: { post: Post }) {
   return (
     <article className="group overflow-hidden transition hover:shadow-md">
       <Link href={`/stire/${post.slug}`} className="block">
         <div className="relative aspect-[16/9]">
-          <Image
-            src={post.image}
-            alt={post.title}
-            fill
-            className="object-cover transition duration-300 group-hover:scale-[1.02]"
-          />
+          {post.image ? (
+            <Image
+              src={post.image}
+              alt={post.title}
+              fill
+              className="object-cover transition duration-300 group-hover:scale-[1.02]"
+            />
+          ) : (
+            <div className="absolute inset-0 bg-gray-200 dark:bg-white/10" />
+          )}
+
           {(post.hasVideo || post.video) && (
             <span className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white">
               ▶

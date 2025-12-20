@@ -1,8 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { categories } from "../data/categories";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+type MenuCategory = { slug: string; name: string };
+type SearchItem = {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  image?: string;
+};
 
 function SocialIcon({ children }: { children: React.ReactNode }) {
   return (
@@ -15,6 +23,16 @@ function SocialIcon({ children }: { children: React.ReactNode }) {
   );
 }
 
+// debounce mic
+function useDebounced<T>(value: T, delayMs = 250) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebounced(value), delayMs);
+    return () => window.clearTimeout(t);
+  }, [value, delayMs]);
+  return debounced;
+}
+
 export function MenuPanel({
   open,
   onClose,
@@ -24,14 +42,94 @@ export function MenuPanel({
 }) {
   const [mounted, setMounted] = useState(open);
 
+  const [cats, setCats] = useState<MenuCategory[]>([]);
+  const [catsLoading, setCatsLoading] = useState(false);
+
+  const [q, setQ] = useState("");
+  const debouncedQ = useDebounced(q, 250);
+
+  const [results, setResults] = useState<SearchItem[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (open) setMounted(true);
-    else {
+    if (open) {
+      setMounted(true);
+      // focus când se deschide
+      const t = window.setTimeout(() => inputRef.current?.focus(), 120);
+      return () => window.clearTimeout(t);
+    } else {
       const t = setTimeout(() => setMounted(false), 200);
       return () => clearTimeout(t);
     }
   }, [open]);
+
+  // load categories când se deschide
+  useEffect(() => {
+    if (!open) return;
+
+    let cancelled = false;
+    setCatsLoading(true);
+
+    (async () => {
+      try {
+        const res = await fetch("/api/categories", { cache: "no-store" });
+        if (!res.ok) return;
+        const data: MenuCategory[] = await res.json();
+        if (!cancelled) setCats(data);
+      } catch {
+        // ignore
+      } finally {
+        if (!cancelled) setCatsLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
+  // search în WP (via api)
+  useEffect(() => {
+    if (!open) return;
+
+    const query = debouncedQ.trim();
+    if (!query) {
+      setResults([]);
+      setSearchLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setSearchLoading(true);
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`, {
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+        const data: SearchItem[] = await res.json();
+        if (!cancelled) setResults(data);
+      } catch {
+        // ignore
+      } finally {
+        if (!cancelled) setSearchLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedQ, open]);
+
+  const showDropdown = useMemo(() => {
+    return (
+      open &&
+      (searchLoading || results.length > 0 || debouncedQ.trim().length > 0)
+    );
+  }, [open, searchLoading, results.length, debouncedQ]);
 
   if (!mounted) return null;
 
@@ -48,29 +146,87 @@ export function MenuPanel({
           <div className="py-5">
             {/* SEARCH (mobil) */}
             <div className="mx-auto max-w-md">
-              <div className="flex gap-2">
-                <input
-                  placeholder="Caută pe stirilocale"
-                  className="w-full rounded-md bg-white px-4 py-3 text-sm text-gray-900 outline-none"
-                />
-                <button className="rounded-md bg-red-600 px-4 py-3 text-sm font-semibold hover:bg-red-500">
-                  Caută
-                </button>
+              <div className="relative">
+                <div className="flex gap-2">
+                  <input
+                    ref={inputRef}
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    placeholder="Caută pe stirilocale"
+                    className="w-full rounded-md bg-white px-4 py-3 text-sm text-gray-900 outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // forțăm search acum; debouncedQ va urma imediat
+                      setQ((v) => v.trim());
+                    }}
+                    className="rounded-md bg-red-600 px-4 py-3 text-sm font-semibold hover:bg-red-500"
+                  >
+                    Caută
+                  </button>
+                </div>
+
+                {/* dropdown rezultate */}
+                {showDropdown ? (
+                  <div className="absolute left-0 right-0 mt-2 overflow-hidden rounded-md border border-white/10 bg-[#071e32] shadow-lg">
+                    {searchLoading ? (
+                      <div className="px-4 py-3 text-sm text-white/70">
+                        Se caută…
+                      </div>
+                    ) : results.length === 0 ? (
+                      <div className="px-4 py-3 text-sm text-white/70">
+                        Niciun rezultat.
+                      </div>
+                    ) : (
+                      <ul className="max-h-[60vh] overflow-auto">
+                        {results.map((r) => (
+                          <li key={r.id}>
+                            <Link
+                              href={`/stire/${r.slug}`}
+                              onClick={() => {
+                                setQ("");
+                                setResults([]);
+                                onClose();
+                              }}
+                              className="block px-4 py-3 hover:bg-white/5"
+                            >
+                              <div className="text-sm font-extrabold leading-snug">
+                                {r.title}
+                              </div>
+                              {r.excerpt ? (
+                                <div className="mt-1 line-clamp-2 text-xs text-white/70">
+                                  {r.excerpt}
+                                </div>
+                              ) : null}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ) : null}
               </div>
             </div>
 
             {/* CATEGORIES */}
             <div className="mt-6 mx-auto max-w-md space-y-1">
-              {categories.map((c) => (
-                <Link
-                  key={c.slug}
-                  href={`/#cat-${c.slug}`}
-                  onClick={onClose}
-                  className="flex items-center justify-between rounded-md px-3 py-3 text-lg font-semibold hover:bg-white/5"
-                >
-                  {c.name}
-                </Link>
-              ))}
+              {catsLoading && cats.length === 0 ? (
+                <div className="rounded-md px-3 py-3 text-sm text-white/70">
+                  Se încarcă categoriile…
+                </div>
+              ) : (
+                cats.map((c) => (
+                  <Link
+                    key={c.slug}
+                    href={`/categorie/${c.slug}`}
+                    onClick={onClose}
+                    className="flex items-center justify-between rounded-md px-3 py-3 text-lg font-semibold hover:bg-white/5"
+                  >
+                    {c.name}
+                  </Link>
+                ))
+              )}
             </div>
 
             {/* FOOTER */}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { categories } from "../data/categories";
+import { categories as demoCategories } from "../data/categories";
 import { CurrencyChip } from "./CurrencyChip";
 import { MobileDrawer } from "./MobileDrawer";
 import { HamburgerButton } from "./HamburgerButton";
@@ -93,19 +93,75 @@ function IconTikTok(props: React.SVGProps<SVGSVGElement>) {
 
 type DropdownVariant = "hero-2small" | "two-hero" | "hero-list" | "three-hero";
 
-function dropdownVariantFor(slug: string): DropdownVariant {
-  if (slug === "categorie-3") return "two-hero";
-  if (slug === "categorie-5") return "three-hero";
-  if (slug === "categorie-1") return "hero-list";
-  if (slug === "categorie-4") return "two-hero";
-  if (slug === "categorie-2") return "three-hero";
+function dropdownVariantFor(slug: string) {
+  const s = (slug || "").toLowerCase();
+
+  if (s === "politica") return "two-hero";
+  if (s === "actualitate") return "hero-list";
+  if (s === "sport") return "three-hero";
+  if (s === "local") return "hero-2small";
+  if (s === "ultima-ora") return "hero-list";
+
   return "hero-2small";
 }
 
+type SearchItem = {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  image?: string;
+};
+
+function useDebounced<T>(value: T, delayMs = 250) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebounced(value), delayMs);
+    return () => window.clearTimeout(t);
+  }, [value, delayMs]);
+  return debounced;
+}
+
+type NavCategory = { slug: string; name: string };
+
 export function Header() {
+  const [navCategories, setNavCategories] = useState<NavCategory[]>(
+    demoCategories.map((c) => ({ slug: c.slug, name: c.name }))
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await fetch("/api/categories", { cache: "no-store" });
+        if (!res.ok) return;
+
+        const data = (await res.json()) as NavCategory[];
+        if (!cancelled && Array.isArray(data) && data.length) {
+          // extra-sigur: scoate uncategorized și aici
+          const cleaned = data.filter(
+            (c) => c?.slug && c.slug.toLowerCase() !== "uncategorized"
+          );
+          if (cleaned.length) setNavCategories(cleaned);
+        }
+      } catch {
+        // rămâne fallback-ul demo
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const [menuOpen, setMenuOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<"menu" | "search">("menu");
   const [desktopSearchOpen, setDesktopSearchOpen] = useState(false);
+
+  const [desktopQ, setDesktopQ] = useState("");
+  const debouncedDesktopQ = useDebounced(desktopQ, 250);
+  const [desktopResults, setDesktopResults] = useState<SearchItem[]>([]);
+  const [desktopSearching, setDesktopSearching] = useState(false);
 
   // dropdown hover desktop
   const [hoverCat, setHoverCat] = useState<{
@@ -114,9 +170,18 @@ export function Header() {
   } | null>(null);
   const closeTimer = useRef<number | null>(null);
 
-  const topCatsDesktop = useMemo(() => categories.slice(0, 5), []);
-  const navCatsDesktop = useMemo(() => categories.slice(0, 5), []);
-  const navCatsMobile = useMemo(() => categories.slice(0, 10), []);
+  const topCatsDesktop = useMemo(
+    () => navCategories.slice(0, 5),
+    [navCategories]
+  );
+  const navCatsDesktop = useMemo(
+    () => navCategories.slice(0, 5),
+    [navCategories]
+  );
+  const navCatsMobile = useMemo(
+    () => navCategories.slice(0, 10),
+    [navCategories]
+  );
 
   const headerRef = useRef<HTMLElement | null>(null);
 
@@ -145,6 +210,39 @@ export function Header() {
       if (closeTimer.current) window.clearTimeout(closeTimer.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (!desktopSearchOpen) return;
+
+    const q = debouncedDesktopQ.trim();
+    if (!q) {
+      setDesktopResults([]);
+      setDesktopSearching(false);
+      return;
+    }
+
+    let cancelled = false;
+    setDesktopSearching(true);
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`, {
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+        const data: SearchItem[] = await res.json();
+        if (!cancelled) setDesktopResults(data);
+      } catch {
+        // ignore
+      } finally {
+        if (!cancelled) setDesktopSearching(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedDesktopQ, desktopSearchOpen]);
 
   const openDrawerSearch = () => {
     setDrawerMode("search");
@@ -375,19 +473,69 @@ export function Header() {
           <div className="hidden md:block bg-white">
             <div className="mx-auto max-w-[80rem] px-4">
               <div className="py-3">
-                <div className="flex items-center gap-2 rounded-md border bg-white px-3 py-2 shadow-sm">
-                  <IconSearch className="h-4 w-4 text-gray-500" />
-                  <input
-                    placeholder="Caută știri."
-                    className="w-full bg-transparent text-sm outline-none"
-                  />
-                  <button
-                    onClick={() => setDesktopSearchOpen(false)}
-                    className="rounded-md px-2 py-1 text-sm text-gray-500 hover:text-gray-800"
-                    aria-label="Închide căutarea"
-                  >
-                    ✕
-                  </button>
+                <div className="relative">
+                  <div className="flex items-center gap-2 rounded-md border bg-white px-3 py-2 shadow-sm">
+                    <IconSearch className="h-4 w-4 text-gray-500" />
+                    <input
+                      value={desktopQ}
+                      onChange={(e) => setDesktopQ(e.target.value)}
+                      placeholder="Caută știri."
+                      className="w-full bg-transparent text-sm outline-none"
+                    />
+                    <button
+                      onClick={() => {
+                        setDesktopSearchOpen(false);
+                        setDesktopQ("");
+                        setDesktopResults([]);
+                      }}
+                      className="rounded-md px-2 py-1 text-sm text-gray-500 hover:text-gray-800"
+                      aria-label="Închide căutarea"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  {/* rezultate */}
+                  {(desktopSearching ||
+                    desktopResults.length > 0 ||
+                    debouncedDesktopQ.trim().length > 0) && (
+                    <div className="absolute left-0 right-0 mt-2 overflow-hidden rounded-md border bg-white shadow-lg">
+                      {desktopSearching ? (
+                        <div className="px-4 py-3 text-sm text-gray-600">
+                          Se caută…
+                        </div>
+                      ) : desktopResults.length === 0 ? (
+                        <div className="px-4 py-3 text-sm text-gray-600">
+                          Niciun rezultat.
+                        </div>
+                      ) : (
+                        <ul className="max-h-[60vh] overflow-auto">
+                          {desktopResults.map((r) => (
+                            <li key={r.id}>
+                              <Link
+                                href={`/stire/${r.slug}`}
+                                onClick={() => {
+                                  setDesktopSearchOpen(false);
+                                  setDesktopQ("");
+                                  setDesktopResults([]);
+                                }}
+                                className="block px-4 py-3 hover:bg-gray-50"
+                              >
+                                <div className="text-sm font-extrabold leading-snug text-gray-900">
+                                  {r.title}
+                                </div>
+                                {r.excerpt ? (
+                                  <div className="mt-1 line-clamp-2 text-xs text-gray-600">
+                                    {r.excerpt}
+                                  </div>
+                                ) : null}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -35,14 +35,22 @@ export function CategoryRemaining({
               href={`/stire/${p.slug}`}
               className="md:col-span-5 block overflow-hidden"
             >
-              <img
-                src={p.image}
-                alt={p.title}
-                className="w-full object-cover"
-                style={{ aspectRatio: "16 / 10" }}
-                loading="lazy"
-                decoding="async"
-              />
+              {p.image ? (
+                <img
+                  src={p.image}
+                  alt={p.title}
+                  className="w-full object-cover"
+                  style={{ aspectRatio: "16 / 10" }}
+                  loading="lazy"
+                  decoding="async"
+                />
+              ) : (
+                <div
+                  className="w-full bg-gray-200/60 dark:bg-white/10"
+                  style={{ aspectRatio: "16 / 10" }}
+                  aria-hidden="true"
+                />
+              )}
             </Link>
 
             {/* text */}

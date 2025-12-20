@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef } from "react";
-import { categories } from "../data/categories";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+type MenuCategory = { slug: string; name: string };
 
 function IconSearch(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -95,6 +96,9 @@ export function MobileDrawer({
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
 
+  const [cats, setCats] = useState<MenuCategory[]>([]);
+  const [catsLoading, setCatsLoading] = useState(false);
+
   useEffect(() => {
     if (open && mode === "search") {
       const t = window.setTimeout(() => inputRef.current?.focus(), 80);
@@ -102,14 +106,38 @@ export function MobileDrawer({
     }
   }, [open, mode]);
 
+  // Încarcă categoriile din WP (via Next API) doar când se deschide drawer-ul
+  useEffect(() => {
+    if (!open) return;
+
+    let cancelled = false;
+    setCatsLoading(true);
+
+    (async () => {
+      try {
+        const res = await fetch("/api/categories", { cache: "no-store" });
+        if (!res.ok) return;
+        const data: MenuCategory[] = await res.json();
+        if (!cancelled) setCats(data);
+      } catch {
+        // ignore
+      } finally {
+        if (!cancelled) setCatsLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
   const catPairs = useMemo(() => {
-    // PLACEHOLDER (mai târziu WP)
-    const list = categories.slice(0, 10);
+    const list = cats.slice(0, 10);
     const left: typeof list = [];
     const right: typeof list = [];
     list.forEach((c, i) => (i % 2 === 0 ? left : right).push(c));
     return { left, right };
-  }, []);
+  }, [cats]);
 
   if (!open) return null;
 
@@ -160,32 +188,36 @@ export function MobileDrawer({
               </div>
               <div className="mt-3 h-px w-full bg-white/10" />
 
-              <div className="mt-4 grid grid-cols-2 gap-x-10 gap-y-3">
-                <div className="flex flex-col gap-3">
-                  {catPairs.left.map((c) => (
-                    <Link
-                      key={c.slug}
-                      href={`/categorie/${c.slug}`}
-                      onClick={onClose}
-                      className="text-sm font-semibold text-white/90 hover:text-white"
-                    >
-                      {c.name}
-                    </Link>
-                  ))}
+              {catsLoading && cats.length === 0 ? (
+                <div className="mt-4 text-sm text-white/60">Se încarcă…</div>
+              ) : (
+                <div className="mt-4 grid grid-cols-2 gap-x-10 gap-y-3">
+                  <div className="flex flex-col gap-3">
+                    {catPairs.left.map((c) => (
+                      <Link
+                        key={c.slug}
+                        href={`/categorie/${c.slug}`}
+                        onClick={onClose}
+                        className="text-sm font-semibold text-white/90 hover:text-white"
+                      >
+                        {c.name}
+                      </Link>
+                    ))}
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    {catPairs.right.map((c) => (
+                      <Link
+                        key={c.slug}
+                        href={`/categorie/${c.slug}`}
+                        onClick={onClose}
+                        className="text-sm font-semibold text-white/90 hover:text-white"
+                      >
+                        {c.name}
+                      </Link>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex flex-col gap-3">
-                  {catPairs.right.map((c) => (
-                    <Link
-                      key={c.slug}
-                      href={`/categorie/${c.slug}`}
-                      onClick={onClose}
-                      className="text-sm font-semibold text-white/90 hover:text-white"
-                    >
-                      {c.name}
-                    </Link>
-                  ))}
-                </div>
-              </div>
+              )}
             </div>
 
             {/* SOCIAL (mai evident) */}

@@ -1,11 +1,9 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { posts } from "../../data/posts"; // fallback demo (până legi WP)
 import { PopularInCategory } from "../../components/PopularInCategory";
-
-// dacă ai WP gata, înlocuiești:
-// import { getPostBySlug } from "../../lib/wp";
+import { posts as demoPosts } from "../../data/posts";
+import { getWpPostBySlug, getWpPosts } from "../../lib/wp";
 
 function fmtDate(iso: string) {
   try {
@@ -15,6 +13,34 @@ function fmtDate(iso: string) {
   }
 }
 
+/**
+ * Scoate primul bloc <figure><img ...></figure> din content
+ * DOAR dacă imaginea este aceeași cu featured (acceptă și variantele -1024x683 etc).
+ */
+function removeFirstDuplicateFeaturedImage(html: string, featuredUrl?: string) {
+  if (!html || !featuredUrl) return html;
+
+  // normalizează: scoate sufixe de resize (-1024x683) înainte de extensie
+  const normalize = (url: string) => url.replace(/-\d+x\d+(?=\.\w+$)/, "");
+
+  const featuredBase = normalize(featuredUrl);
+
+  // găsim primul figure care conține un img cu src
+  const re =
+    /<figure[^>]*>\s*<img[^>]+src=["']([^"']+)["'][^>]*>\s*(?:<\/img>)?\s*<\/figure>/i;
+
+  const m = html.match(re);
+  if (!m) return html;
+
+  const imgSrc = m[1];
+  const imgBase = normalize(imgSrc);
+
+  // dacă primul img din content e aceeași imagine (baza), îl eliminăm
+  if (imgBase !== featuredBase) return html;
+
+  return html.replace(re, "");
+}
+
 export default async function StirePage({
   params,
 }: {
@@ -22,25 +48,47 @@ export default async function StirePage({
 }) {
   const { slug } = await params;
 
-  // ✅ DEMO: căutăm în posts locale
-  const post = posts.find((p) => p.slug === slug) ?? null;
+  // 1) Încearcă WP
+  const wpPost = await getWpPostBySlug(slug);
 
-  // ✅ WP: când e gata, folosești:
-  // const post = await getPostBySlug(slug);
+  // 2) Fallback pe demo dacă WP nu e disponibil / nu există slug
+  const demoPost = demoPosts.find((p) => p.slug === slug) ?? null;
 
+  const post = wpPost ?? demoPost;
   if (!post) return notFound();
 
-  // Populare doar din aceeași categorie (după views)
-  const popular = [...posts]
-    .filter(
-      (p) => p.category.slug === post.category.slug && p.slug !== post.slug
-    )
-    .sort((a, b) => (b.views ?? 0) - (a.views ?? 0));
+  const isWP = Boolean(wpPost);
 
-  // maxim 5 poze (dacă există array de imagini în data ta)
-  const gallery = (post.images?.length ? post.images : [])
+  // Popular: încercăm WP doar dacă articolul vine din WP
+  const wpSameCat =
+    isWP && post.category?.slug
+      ? await getWpPosts({ perPage: 12, categorySlug: post.category.slug })
+      : [];
+
+  // Dacă WP nu dă nimic, folosim demo
+  const popularPool = wpSameCat.length ? wpSameCat : demoPosts;
+
+  const popular =
+    popularPool === demoPosts
+      ? popularPool
+          .filter(
+            (p) =>
+              p.category.slug === post.category.slug && p.slug !== post.slug
+          )
+          .sort((a, b) => (b.views ?? 0) - (a.views ?? 0))
+      : popularPool.filter((p) => p.slug !== post.slug);
+
+  // DEMO gallery (doar demo, ca să nu dubleze WP)
+  const gallery = (!isWP && post.images?.length ? post.images : [])
     .filter(Boolean)
     .slice(0, 5);
+
+  // content final:
+  // - WP: scoatem prima imagine dacă e aceeași cu featured
+  // - DEMO: lăsăm exact cum e
+  const contentHtml = isWP
+    ? removeFirstDuplicateFeaturedImage(post.content ?? "", post.image)
+    : post.content ?? "";
 
   return (
     <main className="bg-white text-gray-900 dark:bg-[#0b131a] dark:text-white">
@@ -48,7 +96,6 @@ export default async function StirePage({
         <div className="grid gap-10 md:grid-cols-12 md:items-start">
           {/* STÂNGA: articol */}
           <article className="md:col-span-8">
-            {/* (opțional) breadcrumb simplu */}
             <div className="text-xs font-semibold text-gray-500 dark:text-white/50">
               <Link
                 href={`/categorie/${post.category.slug}`}
@@ -67,7 +114,7 @@ export default async function StirePage({
               {fmtDate(post.publishedAt)}
             </div>
 
-            {/* HERO (dacă vrei să o lași la latitudinea editorului, poți scoate blocul ăsta) */}
+            {/* ✅ Featured image: o singură dată, sus */}
             {post.image ? (
               <img
                 src={post.image}
@@ -79,7 +126,7 @@ export default async function StirePage({
               />
             ) : null}
 
-            {/* Galerie opțională (max 5) – nu te obligă, editorul poate pune imagini în content */}
+            {/* DEMO gallery (nu pentru WP) */}
             {gallery.length > 0 ? (
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
                 {gallery.map((src, i) => (
@@ -96,24 +143,20 @@ export default async function StirePage({
               </div>
             ) : null}
 
-            {/* Conținut – editorul controlează poziționarea text/imagini */}
+            {/* ✅ Conținut WP în ordinea blocurilor (heading/quote/list/etc) */}
             <div
               className="
                 prose prose-lg mt-10 max-w-none
                 prose-headings:font-extrabold
                 dark:prose-invert
               "
-              // în demo, `post.content` poate să nu existe; poți scoate fallback
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              dangerouslySetInnerHTML={{ __html: (post as any).content ?? "" }}
+              dangerouslySetInnerHTML={{ __html: contentHtml }}
             />
           </article>
 
           {/* DREAPTA: articole populare */}
           <div className="md:col-span-4 sticky top-24">
-            <div>
-              <PopularInCategory posts={popular} />
-            </div>
+            <PopularInCategory posts={popular} />
           </div>
         </div>
       </div>

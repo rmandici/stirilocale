@@ -1,10 +1,10 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
-import { posts } from "./data/posts";
-import { categories, CategorySlug } from "./data/categories";
+import type { Post } from "./lib/wp";
+import { getWpPosts } from "./lib/wp";
 import { FeaturedHero } from "./components/FeaturedHero";
 import { AllPostsSection } from "./components/AllPostsSection";
-
+import { posts as demoPosts } from "./data/posts";
 // ✅ le ai deja create
 import { CurrencyBox } from "./components/CurrencyBox";
 import { MostRead } from "./components/MostRead";
@@ -49,7 +49,7 @@ function MiniStory({
   showThumb = true,
   light,
 }: {
-  p: (typeof posts)[number];
+  p: Post;
   showThumb?: boolean;
   light?: boolean;
 }) {
@@ -90,7 +90,7 @@ function MiniStory({
   );
 }
 
-function BigCard({ p, tall }: { p: (typeof posts)[number]; tall?: boolean }) {
+function BigCard({ p, tall }: { p: Post; tall?: boolean }) {
   return (
     // ❌ scos rounded-2xl
     <div className="">
@@ -124,70 +124,77 @@ function BigCard({ p, tall }: { p: (typeof posts)[number]; tall?: boolean }) {
   );
 }
 
-export default function Home() {
+export default async function Home() {
+  const wpPosts = await getWpPosts({ perPage: 50 });
+  const posts: Post[] =
+    wpPosts.length >= 8 ? wpPosts : (demoPosts as unknown as Post[]);
+
   const latest = [...posts].sort(
     (a, b) => +new Date(b.publishedAt) - +new Date(a.publishedAt)
   );
-
-  // ===== helpers (evităm dubluri) =====
+  if (latest.length === 0) {
+    return (
+      <main className="mx-auto max-w-6xl px-4 py-10">
+        <div className="text-sm text-gray-600">Nu există articole încă.</div>
+      </main>
+    );
+  }
 
   // ===== SECȚIUNEA 1 =====
-  const featured = latest[0];
+  const featured = latest[0] ?? null;
   const rest = latest.slice(1);
 
-  // ===== SECȚIUNEA 1 (cronologic, fără dubluri) =====
-  const bestOf = rest.slice(0, 2); // penultimul + antepenultimul
-  const headlines = rest.slice(2, 7); // următoarele 5
+  // Secțiunea 1 (cronologic)
+  const bestOf = rest.slice(0, 2);
+  const headlines = rest.slice(2, 7);
 
-  // marcăm ce s-a consumat în secțiunea 1
-  const used = new Set<string>([
-    featured.id,
-    ...bestOf.map((p) => p.id),
-    ...headlines.map((p) => p.id),
-  ]);
+  // ✅ Set pentru secțiunile de jos: evităm dubluri ÎNTRE secțiunile de jos,
+  // dar permitem dubluri cu Secțiunea 1.
+  const usedBelow = new Set<string>();
 
-  // ===== SECȚIUNEA 2: doar Politică (cronologic) =====
-  const POLITICA_SLUG: CategorySlug = "categorie-2";
+  function pickFirst<T extends Post>(
+    arr: T[],
+    count: number,
+    used: Set<string>
+  ) {
+    const out: T[] = [];
+    for (const p of arr) {
+      if (!p) continue;
+      if (used.has(p.id)) continue;
+      used.add(p.id);
+      out.push(p);
+      if (out.length >= count) break;
+    }
+    return out;
+  }
 
-  const politicsPool = rest.filter(
-    (p) =>
-      !used.has(p.id) &&
-      (p.category?.slug === POLITICA_SLUG ||
-        p.category?.name?.toLowerCase() === "politică" ||
-        p.category?.name?.toLowerCase() === "politica")
+  // ===== SECȚIUNEA 2: Politică (poate repeta din top) =====
+  const politicsPool = rest.filter((p) =>
+    ["politică", "politica"].includes((p.category?.name ?? "").toLowerCase())
   );
 
-  // stânga (articolul principal din secțiunea 2)
-  const politicsFeatured = politicsPool[0];
+  // Alegem din politicsPool, dar deduplicăm doar față de celelalte secțiuni de jos
+  const politicsPicked = pickFirst(politicsPool, 1 + 4 + 4, usedBelow);
+  const politicsFeatured = politicsPicked[0];
+  const featuredGrid = politicsPicked.slice(1, 5);
+  const featuredExtra = politicsPicked.slice(5, 9);
 
-  // următoarele 4 (grid jos)
-  const featuredGrid = politicsPool.slice(1, 5);
-
-  // următoarele 4 (featuredExtra: 2 mici stânga + 2 jos)
-  const featuredExtra = politicsPool.slice(5, 9);
-
-  // marchezi ca folosite (ca să nu se repete în secțiuni viitoare)
-  [politicsFeatured, ...featuredGrid, ...featuredExtra].forEach((p) => {
-    if (p) used.add(p.id);
-  });
-
-  // ===== SECȚIUNEA 3: doar Actualitate =====
-  const ACTUALITATE_SLUG: CategorySlug = "categorie-3";
-
-  const cat3 = categories.find((c) => c.slug === ACTUALITATE_SLUG)!;
+  // ===== SECȚIUNEA 3: Actualitate (poate repeta din top, dar nu repetă Politică) =====
+  const ACTUALITATE_NAME = "Actualitate";
 
   const actualitatePool = rest.filter(
-    (p) => !used.has(p.id) && p.category?.slug === ACTUALITATE_SLUG
+    (p) =>
+      (p.category?.name ?? "").toLowerCase() === ACTUALITATE_NAME.toLowerCase()
   );
 
-  // 2 mari + încă 5 în box
-  const cat3Big = actualitatePool.slice(0, 2);
-  const cat3More = actualitatePool.slice(2, 7);
+  // Tot “jos” => deduplicăm față de cele deja luate la Politică prin usedBelow
+  const actualitatePicked = pickFirst(actualitatePool, 2 + 5, usedBelow);
+  const cat3Big = actualitatePicked.slice(0, 2);
+  const cat3More = actualitatePicked.slice(2, 7);
 
-  // marchează ca folosite
-  [...cat3Big, ...cat3More].forEach((p) => used.add(p.id));
+  const cat3Name = ACTUALITATE_NAME;
 
-  const mostRead = [...posts].sort((a, b) => b.views - a.views);
+  const mostRead = latest.slice(0, 10);
 
   return (
     <main>
@@ -203,8 +210,8 @@ export default function Home() {
 
             {/* ✅ FIX mobil: înălțime controlată doar pe md+ */}
             <div className="md:flex-1">
-              <div className="md:h-[calc(80vh-var(--header-h,64px)-84px)]">
-                <FeaturedHero post={featured} />
+              <div className="md:min-h-[520px]">
+                {featured ? <FeaturedHero post={featured} /> : null}
               </div>
             </div>
           </div>
@@ -399,7 +406,7 @@ export default function Home() {
       )}
       {/* ===== SECȚIUNEA 3 ===== */}
       <section className="mx-auto mt-10 max-w-6xl px-4 py-10 min-h-[calc(100vh-var(--header-h,64px))]">
-        <SectionTitle title={cat3.name} href={`/categorie/${cat3.slug}`} />
+        <SectionTitle title={cat3Name} href={`/categorie/actualitate`} />
 
         <div className="mt-7 grid gap-6 md:grid-cols-12 md:items-start">
           {/* 2 mari */}
@@ -413,7 +420,7 @@ export default function Home() {
           <div className="md:col-span-4 sticky top-24 self-start">
             <div className="bg-[#0B2A45] dark:bg-[#0b131a] p-5 text-white">
               <div className="text-sm font-extrabold uppercase tracking-wide">
-                Mai mult din {cat3.name}
+                Mai mult din {cat3Name}
               </div>
               <div className="mt-5 space-y-4">
                 {cat3More.map((p) => (
