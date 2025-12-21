@@ -105,7 +105,7 @@ export function Footer() {
 
           {/* Copyright */}
           <div className="text-center text-[11px] text-white/60">
-            © {new Date().getFullYear()} stirilocale.ro · Toate drepturile
+            © {new Date().getFullYear()} callatispress.ro · Toate drepturile
             rezervate
           </div>
         </div>

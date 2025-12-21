@@ -6,21 +6,8 @@ function safeEncode(v: string) {
   return encodeURIComponent(v);
 }
 
-function getOrigin() {
-  if (typeof window === "undefined") return "";
-  return window.location.origin;
-}
-
 function facebookShareUrl(url: string) {
   return `https://www.facebook.com/sharer/sharer.php?u=${safeEncode(url)}`;
-}
-
-// X (Twitter)
-function xShareUrl(url: string, text?: string) {
-  const params = new URLSearchParams();
-  params.set("url", url);
-  if (text) params.set("text", text);
-  return `https://twitter.com/intent/tweet?${params.toString()}`;
 }
 
 function whatsappShareUrl(url: string, text?: string) {
@@ -29,13 +16,11 @@ function whatsappShareUrl(url: string, text?: string) {
 }
 
 async function copyToClipboard(text: string) {
-  // modern
   if (navigator?.clipboard?.writeText) {
     await navigator.clipboard.writeText(text);
     return;
   }
 
-  // fallback
   const ta = document.createElement("textarea");
   ta.value = text;
   ta.style.position = "fixed";
@@ -52,43 +37,42 @@ function openPopup(url: string) {
 }
 
 export function ShareBar({
+  url,
   path,
   title,
   className = "",
 }: {
-  path: string; // ex: /stire/slug
+  url?: string; // ✅ URL absolut: https://site.ro/stire/slug (preferat)
+  path?: string; // fallback: /stire/slug
   title?: string;
   className?: string;
 }) {
   const [copied, setCopied] = useState(false);
 
   const absoluteUrl = useMemo(() => {
-    const origin = getOrigin();
-    return origin ? origin + path : path;
-  }, [path]);
+    if (url) return url;
+
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    if (origin && path) return origin + path;
+
+    return path ?? ""; // dacă suntem în SSR și n-ai url, măcar ai path
+  }, [url, path]);
 
   const onFacebook = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
+      if (!absoluteUrl) return;
       openPopup(facebookShareUrl(absoluteUrl));
     },
     [absoluteUrl]
-  );
-
-  const onX = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      openPopup(xShareUrl(absoluteUrl, title));
-    },
-    [absoluteUrl, title]
   );
 
   const onWhatsApp = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
+      if (!absoluteUrl) return;
       openPopup(whatsappShareUrl(absoluteUrl, title));
     },
     [absoluteUrl, title]
@@ -98,12 +82,14 @@ export function ShareBar({
     async (e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
+      if (!absoluteUrl) return;
+
       try {
         await copyToClipboard(absoluteUrl);
         setCopied(true);
         window.setTimeout(() => setCopied(false), 1200);
       } catch {
-        // dacă pică, nu facem nimic special
+        // ignore
       }
     },
     [absoluteUrl]
@@ -112,6 +98,7 @@ export function ShareBar({
   return (
     <div className={className}>
       <div className="flex items-center gap-1">
+        {/* Facebook */}
         <button
           type="button"
           onClick={onFacebook}
@@ -134,6 +121,7 @@ export function ShareBar({
           <span className="hidden sm:inline">Share</span>
         </button>
 
+        {/* WhatsApp */}
         <button
           type="button"
           onClick={onWhatsApp}
@@ -156,6 +144,7 @@ export function ShareBar({
           <span className="hidden sm:inline">Share</span>
         </button>
 
+        {/* Copy */}
         <button
           type="button"
           onClick={onCopy}

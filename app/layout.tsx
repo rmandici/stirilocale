@@ -6,9 +6,32 @@ import { Inter, Newsreader } from "next/font/google";
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const newsreader = Newsreader({ subsets: ["latin"], variable: "--font-serif" });
 
+const site =
+  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
+
 export const metadata: Metadata = {
-  title: "stirilocale",
-  description: "Demo site știri",
+  metadataBase: site ? new URL(site) : undefined,
+
+  // ✅ template, ca paginile să pună titlul lor
+  title: {
+    default: "Callatis Press",
+    template: "%s | Știri Locale",
+  },
+
+  description:
+    "Știri din România: actualitate, local, politică, sport, ultimă oră.",
+
+  openGraph: {
+    type: "website",
+    url: site || undefined,
+    siteName: "Callatis Press",
+    locale: "ro_RO",
+  },
+
+  twitter: {
+    card: "summary_large_image",
+  },
 };
 
 export default function RootLayout({

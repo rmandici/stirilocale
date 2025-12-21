@@ -8,6 +8,30 @@ import { posts as demoPosts } from "./data/posts";
 import { CurrencyBox } from "./components/CurrencyBox";
 import { MostRead } from "./components/MostRead";
 import { ShareBar } from "./components/ShareBar";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Callatis Press",
+  description:
+    "Știri din România: actualitate, local, politică, sport, ultimă oră.",
+  openGraph: {
+    type: "website",
+    title: "Callatis Press",
+    description:
+      "Știri din România: actualitate, local, politică, sport, ultimă oră.",
+    siteName: "Callatis Press",
+    locale: "ro_RO",
+    url: "https://callatispress.ro",
+    images: [
+      {
+        url: "https://callatispress.ro/og-home.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Callatis Press",
+      },
+    ],
+  },
+};
 
 function cn(...a: (string | false | undefined)[]) {
   return a.filter(Boolean).join(" ");
@@ -199,7 +223,7 @@ function BigCard({ p, tall }: { p: Post; tall?: boolean }) {
           </div>
 
           <ShareBar
-            path={`/stire/${p.slug}`}
+            url={`${process.env.NEXT_PUBLIC_SITE_URL}/stire/${p.slug}`}
             title={p.title}
             className="shrink-0"
           />
@@ -344,7 +368,7 @@ export default async function Home() {
                           {new Date(p.publishedAt).toLocaleDateString("ro-RO")}
                         </div>
                         <ShareBar
-                          path={`/stire/${p.slug}`}
+                          url={`${process.env.NEXT_PUBLIC_SITE_URL}/stire/${p.slug}`}
                           title={p.title}
                           className="shrink-0"
                         />
@@ -423,7 +447,7 @@ export default async function Home() {
 
                   <div className="mt-4">
                     <ShareBar
-                      path={`/stire/${politicsFeatured.slug}`}
+                      url={`${process.env.NEXT_PUBLIC_SITE_URL}/stire/${politicsFeatured.slug}`}
                       title={politicsFeatured.title}
                     />
                   </div>
@@ -522,7 +546,7 @@ export default async function Home() {
                                 {p.author}
                               </div>
                               <ShareBar
-                                path={`/stire/${p.slug}`}
+                                url={`${process.env.NEXT_PUBLIC_SITE_URL}/stire/${p.slug}`}
                                 title={p.title}
                               />
                             </div>
@@ -550,7 +574,9 @@ export default async function Home() {
                         </p>
 
                         <div className="mt-3">
-                          <ShareBar path={`/stire/${p.slug}`} title={p.title} />
+                          url=
+                          {`${process.env.NEXT_PUBLIC_SITE_URL}/stire/${p.slug}`}
+                          title={p.title}
                         </div>
                       </div>
                     ))}

@@ -152,7 +152,7 @@ export function MenuPanel({
                     ref={inputRef}
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
-                    placeholder="Caută pe stirilocale"
+                    placeholder="Caută pe Callatis Press"
                     className="w-full rounded-md bg-white px-4 py-3 text-sm text-gray-900 outline-none"
                   />
                   <button
@@ -247,7 +247,7 @@ export function MenuPanel({
               </div>
 
               <div className="mt-4 text-[11px] text-white/60">
-                © {new Date().getFullYear()} stirilocale.ro · Toate drepturile
+                © {new Date().getFullYear()} CallatisPress.ro · Toate drepturile
                 rezervate
               </div>
             </div>

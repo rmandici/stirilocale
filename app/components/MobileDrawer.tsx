@@ -246,7 +246,7 @@ export function MobileDrawer({
             <div className="mt-3 h-px w-full bg-white/10" />
 
             <div className="mt-8 text-xs text-white/50 justify-center text-center">
-              © stirilocale — demo.
+              © CallatisPress — demo.
             </div>
           </div>
         </div>
