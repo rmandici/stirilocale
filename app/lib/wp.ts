@@ -57,10 +57,8 @@ function detectHasVideo(html: string) {
 }
 
 function firstCategoryFromEmbedded(p: WPPost): Category {
-  // WP poate avea wp:term -> categories/tags, în funcție de setup
   const terms = p._embedded?.["wp:term"];
   if (Array.isArray(terms)) {
-    // de obicei [categories[], tags[]]
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const cats = terms.flat().filter((t: any) => t?.taxonomy === "category");
     if (cats?.length)
@@ -71,13 +69,25 @@ function firstCategoryFromEmbedded(p: WPPost): Category {
 
 function featuredImageFromEmbedded(p: WPPost) {
   const media = p._embedded?.["wp:featuredmedia"]?.[0];
-  // source_url e cel mai simplu
-  const src = media?.source_url ?? "";
-  return src;
+  return media?.source_url ?? "";
 }
 
 function authorNameFromEmbedded(p: WPPost) {
   return p._embedded?.author?.[0]?.name ?? "Admin";
+}
+
+function wpHeaders() {
+  // ajută pentru anumite protecții care tratează fetch-ul "fără UA" ca bot
+  return {
+    accept: "application/json",
+    "user-agent":
+      "Mozilla/5.0 (compatible; CallatisPressBot/1.0; +https://callatispress.ro)",
+  };
+}
+
+function isJsonResponse(res: Response) {
+  const ct = res.headers.get("content-type") || "";
+  return ct.includes("application/json");
 }
 
 export async function getWpCategories(): Promise<Map<number, Category>> {
@@ -85,8 +95,12 @@ export async function getWpCategories(): Promise<Map<number, Category>> {
     if (!WP_BASE) return new Map();
 
     const url = `${WP_BASE}/wp-json/wp/v2/categories?per_page=100`;
-    const res = await fetch(url, { next: { revalidate: 300 } });
+    const res = await fetch(url, {
+      next: { revalidate: 300 },
+      headers: wpHeaders(),
+    });
     if (!res.ok) return new Map();
+    if (!isJsonResponse(res)) return new Map();
 
     const cats: WPCategory[] = await res.json();
     const map = new Map<number, Category>();
@@ -113,9 +127,9 @@ export async function getWpPosts(opts?: {
         `${WP_BASE}/wp-json/wp/v2/categories?slug=${encodeURIComponent(
           opts.categorySlug
         )}`,
-        { next: { revalidate: 300 } }
+        { next: { revalidate: 300 }, headers: wpHeaders() }
       );
-      if (catRes.ok) {
+      if (catRes.ok && isJsonResponse(catRes)) {
         const found: WPCategory[] = await catRes.json();
         categoryId = found?.[0]?.id ?? null;
       }
@@ -128,8 +142,12 @@ export async function getWpPosts(opts?: {
     if (categoryId) qs.set("categories", String(categoryId));
 
     const url = `${WP_BASE}/wp-json/wp/v2/posts?${qs.toString()}`;
-    const res = await fetch(url, { next: { revalidate: 60 } });
+    const res = await fetch(url, {
+      next: { revalidate: 60 },
+      headers: wpHeaders(),
+    });
     if (!res.ok) return [];
+    if (!isJsonResponse(res)) return [];
 
     const wpPosts: WPPost[] = await res.json();
 
@@ -170,8 +188,13 @@ export async function getWpPostBySlug(slug: string) {
     const url = `${WP_BASE}/wp-json/wp/v2/posts?slug=${encodeURIComponent(
       slug
     )}&_embed=1`;
-    const res = await fetch(url, { next: { revalidate: 60 } });
+
+    const res = await fetch(url, {
+      next: { revalidate: 60 },
+      headers: wpHeaders(),
+    });
     if (!res.ok) return null;
+    if (!isJsonResponse(res)) return null;
 
     const arr: WPPost[] = await res.json();
     if (!arr.length) return null;

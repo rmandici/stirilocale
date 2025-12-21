@@ -1,10 +1,13 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { Metadata } from "next";
+
 import { PopularInCategory } from "../../components/PopularInCategory";
 import { posts as demoPosts } from "../../data/posts";
 import { getWpPostBySlug, getWpPosts } from "../../lib/wp";
+
+type Params = { slug: string };
+type MaybePromise<T> = T | Promise<T>;
 
 function fmtDate(iso: string) {
   try {
@@ -14,64 +17,8 @@ function fmtDate(iso: string) {
   }
 }
 
-function siteBase() {
-  const s =
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
-  return s || "https://callatispress.ro";
-}
-
-export async function generateMetadata({
-  params,
-}: {
-  params: { slug: string };
-}): Promise<Metadata> {
-  const site = siteBase();
-  const wpPost = await getWpPostBySlug(params.slug);
-  const demoPost = demoPosts.find((p) => p.slug === params.slug) ?? null;
-  const post = wpPost ?? demoPost;
-
-  if (!post) {
-    return {
-      metadataBase: new URL(site),
-      title: "Callatis Press",
-      openGraph: {
-        type: "website",
-        url: site,
-        title: "Callatis Press",
-        siteName: "Callatis Press",
-        locale: "ro_RO",
-        images: [{ url: new URL("/og-home.jpg", site).toString() }],
-      },
-    };
-  }
-
-  const canonical = new URL(`/stire/${post.slug}`, site).toString();
-  const img = post.image
-    ? post.image
-    : new URL("/og-home.jpg", site).toString();
-
-  return {
-    metadataBase: new URL(site),
-    title: post.title,
-    description: post.excerpt || "",
-    alternates: { canonical },
-    openGraph: {
-      type: "article",
-      url: canonical,
-      title: post.title,
-      description: post.excerpt || "",
-      siteName: "Callatis Press",
-      locale: "ro_RO",
-      images: [{ url: img }],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: post.title,
-      description: post.excerpt || "",
-      images: [img],
-    },
-  };
+async function resolveParams(params: MaybePromise<Params>): Promise<Params> {
+  return await Promise.resolve(params);
 }
 
 /**
@@ -101,9 +48,9 @@ function removeFirstDuplicateFeaturedImage(html: string, featuredUrl?: string) {
 export default async function StirePage({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: MaybePromise<Params>; // ✅ merge și dacă e Promise, și dacă e obiect
 }) {
-  const { slug } = await params;
+  const { slug } = await resolveParams(params); // ✅ sigur
 
   const wpPost = await getWpPostBySlug(slug);
   const demoPost = demoPosts.find((p) => p.slug === slug) ?? null;
