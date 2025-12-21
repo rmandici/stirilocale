@@ -154,8 +154,11 @@ export function DesktopNavDropdown({
             )}
 
             {!hasAny && (
-              <div className="rounded-lg border border-white/10 bg-white/5 p-6 text-sm text-white/70">
-                Nu există articole încă. Le vom încărca din WordPress.
+              <div className="rounded-lg border border-white/10 bg-white/5 p-6 text-sm text-white/70 flex flex-col items-center justify-center gap-3 min-h-[140px]">
+                <span
+                  className="h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-white/70"
+                  aria-label="Se încarcă"
+                />
               </div>
             )}
           </div>
