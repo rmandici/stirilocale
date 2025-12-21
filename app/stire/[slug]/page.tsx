@@ -35,17 +35,21 @@ export async function generateMetadata({
 
   if (!post) return {};
 
-  const site = getSiteBase();
-  const url = site ? `${site}/stire/${post.slug}` : `/stire/${post.slug}`;
+  const site =
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
+
+  const canonical = site
+    ? new URL(`/stire/${post.slug}`, site).toString()
+    : `https://callatispress.ro/stire/${post.slug}`; // fallback hard
 
   return {
     title: post.title,
     description: post.excerpt || "",
-    alternates: { canonical: url },
-
+    alternates: { canonical },
     openGraph: {
       type: "article",
-      url,
+      url: canonical, // ✅ absolut, exact ca canonical
       title: post.title,
       description: post.excerpt || "",
       siteName: "Callatis Press",
@@ -53,13 +57,6 @@ export async function generateMetadata({
       images: post.image
         ? [{ url: post.image, width: 1200, height: 630, alt: post.title }]
         : [],
-    },
-
-    twitter: {
-      card: post.image ? "summary_large_image" : "summary",
-      title: post.title,
-      description: post.excerpt || "",
-      images: post.image ? [post.image] : [],
     },
   };
 }

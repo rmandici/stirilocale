@@ -16,12 +16,12 @@ export const metadata: Metadata = {
     "Știri din România: actualitate, local, politică, sport, ultimă oră.",
   openGraph: {
     type: "website",
+    url: "https://callatispress.ro",
     title: "Callatis Press",
     description:
       "Știri din România: actualitate, local, politică, sport, ultimă oră.",
     siteName: "Callatis Press",
     locale: "ro_RO",
-    url: "https://callatispress.ro",
     images: [
       {
         url: "https://callatispress.ro/og-home.jpg",
