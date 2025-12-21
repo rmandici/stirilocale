@@ -20,17 +20,6 @@ export const metadata: Metadata = {
 
   description:
     "Știri din România: actualitate, local, politică, sport, ultimă oră.",
-
-  openGraph: {
-    type: "website",
-    siteName: "Callatis Press",
-    locale: "ro_RO",
-    // ✅ NU url aici
-  },
-
-  twitter: {
-    card: "summary_large_image",
-  },
 };
 
 export default function RootLayout({

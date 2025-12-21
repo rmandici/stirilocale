@@ -1,13 +1,61 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 
 import { PopularInCategory } from "../../components/PopularInCategory";
 import { posts as demoPosts } from "../../data/posts";
 import { getWpPostBySlug, getWpPosts } from "../../lib/wp";
 
-type Params = { slug: string };
-type MaybePromise<T> = T | Promise<T>;
+function siteBase() {
+  const s =
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
+  return s || "https://callatispress.ro";
+}
+
+type Props = {
+  params: { slug: string };
+};
+
+// ✅ TEST: metadata statică pe articol (fără WP)
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const site = siteBase();
+  const { slug } = await Promise.resolve(params);
+
+  const post = await getWpPostBySlug(slug); // + fallback demo dacă vrei
+  if (!post) return {};
+
+  const canonical = new URL(`/stire/${slug}`, site).toString();
+
+  const ogImage = post.image
+    ? post.image.startsWith("http")
+      ? post.image
+      : new URL(post.image, site).toString()
+    : new URL("/og-home.jpg", site).toString();
+
+  return {
+    metadataBase: new URL(site),
+    title: post.title,
+    description: post.excerpt,
+    alternates: { canonical },
+    openGraph: {
+      type: "article",
+      url: canonical,
+      title: post.title,
+      description: post.excerpt,
+      images: [{ url: ogImage, width: 1200, height: 630 }],
+      siteName: "Callatis Press",
+      locale: "ro_RO",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description: post.excerpt,
+      images: [ogImage],
+    },
+  };
+}
 
 function fmtDate(iso: string) {
   try {
@@ -17,14 +65,6 @@ function fmtDate(iso: string) {
   }
 }
 
-async function resolveParams(params: MaybePromise<Params>): Promise<Params> {
-  return await Promise.resolve(params);
-}
-
-/**
- * Scoate primul bloc <figure><img ...></figure> din content
- * DOAR dacă imaginea este aceeași cu featured (acceptă și variantele -1024x683 etc).
- */
 function removeFirstDuplicateFeaturedImage(html: string, featuredUrl?: string) {
   if (!html || !featuredUrl) return html;
 
@@ -48,9 +88,9 @@ function removeFirstDuplicateFeaturedImage(html: string, featuredUrl?: string) {
 export default async function StirePage({
   params,
 }: {
-  params: MaybePromise<Params>; // ✅ merge și dacă e Promise, și dacă e obiect
+  params: Promise<{ slug: string }>;
 }) {
-  const { slug } = await resolveParams(params); // ✅ sigur
+  const { slug } = await params;
 
   const wpPost = await getWpPostBySlug(slug);
   const demoPost = demoPosts.find((p) => p.slug === slug) ?? null;
@@ -117,22 +157,6 @@ export default async function StirePage({
                 loading="lazy"
                 decoding="async"
               />
-            ) : null}
-
-            {gallery.length > 0 ? (
-              <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                {gallery.map((src, i) => (
-                  <img
-                    key={src + i}
-                    src={src}
-                    alt=""
-                    className="w-full object-cover"
-                    style={{ aspectRatio: "16 / 10" }}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                ))}
-              </div>
             ) : null}
 
             <div

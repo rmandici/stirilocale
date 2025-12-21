@@ -23,13 +23,12 @@ export const metadata: Metadata = {
     siteName: "Callatis Press",
     locale: "ro_RO",
     images: [
-      {
-        url: "https://callatispress.ro/og-home.jpg",
-        width: 1200,
-        height: 630,
-        alt: "Callatis Press",
-      },
+      { url: "https://callatispress.ro/og-home.jpg", width: 1200, height: 630 },
     ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["https://callatispress.ro/og-home.jpg"],
   },
 };
 
