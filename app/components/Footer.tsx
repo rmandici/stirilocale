@@ -1,11 +1,22 @@
 import Link from "next/link";
 
-function SocialIcon({ children }: { children: React.ReactNode }) {
+function SocialIcon({
+  href,
+  label,
+  children,
+}: {
+  href: string;
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <a
-      href="#"
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
       className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 hover:bg-white/15"
-      aria-label="Social"
+      aria-label={label}
+      title={label}
     >
       {children}
     </a>
@@ -63,10 +74,19 @@ function IconTikTok(props: React.SVGProps<SVGSVGElement>) {
 }
 
 export function Footer() {
+  // ✅ completează cu linkurile tale reale
+  const socials = {
+    facebook: "https://www.facebook.com/callatispress", // <-- schimbă
+    instagram: "https://www.instagram.com/", // <-- schimbă
+    x: "https://x.com/", // <-- schimbă
+    youtube: "https://www.youtube.com/", // <-- schimbă
+    tiktok: "https://www.tiktok.com/", // <-- schimbă
+  };
+
   return (
     <footer className="border-t border-white/10 bg-[#0B2A45] dark:bg-[#0b131a] text-white">
       <div className="mx-auto max-w-[80rem] px-4 py-10">
-        <div className="flex flex-col items-center gap-6">
+        <div className="flex flex-col items-center gap-7">
           {/* Links */}
           <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 text-xs text-white/80">
             <Link href="/termeni" className="hover:text-white">
@@ -75,30 +95,51 @@ export function Footer() {
             <Link href="/confidentialitate" className="hover:text-white">
               Politica de confidențialitate
             </Link>
+          </div>
 
-            <Link href="/contact" className="hover:text-white">
-              Contact
-            </Link>
-            <Link href="/despre" className="hover:text-white">
-              Despre noi
-            </Link>
+          {/* Text bloc (în loc de Contact / Despre) */}
+          <div className="max-w-3xl text-center">
+            <div className="text-[13px] leading-relaxed text-white/75">
+              <span className="font-extrabold text-white">Callatis Press</span>{" "}
+              este o publicație locală independentă, creată pentru informare
+              rapidă și corectă. Urmărim subiectele importante din comunitate și
+              le punem în fața oamenilor, pe înțelesul tuturor.
+            </div>
+
+            <div className="mt-4 text-[13px] font-extrabold text-white">
+              Ai un pont, o fotografie sau un video care merită publicat?
+            </div>
+
+            <div className="mt-2 text-[13px] leading-relaxed text-white/75">
+              Trimite-ne pe email:{" "}
+              <a
+                href="mailto:callatis@callatispress.ro"
+                className="font-semibold text-white hover:underline"
+              >
+                callatis@callatispress.ro
+              </a>
+            </div>
+
+            <div className="mt-3 text-xs text-white/55">
+              Datele tale rămân confidențiale.
+            </div>
           </div>
 
           {/* Socials */}
           <div className="flex justify-center gap-3">
-            <SocialIcon>
+            <SocialIcon href={socials.facebook} label="Facebook">
               <IconFacebook className="h-4 w-4" />
             </SocialIcon>
-            <SocialIcon>
+            <SocialIcon href={socials.instagram} label="Instagram">
               <IconInstagram className="h-5 w-5" />
             </SocialIcon>
-            <SocialIcon>
+            <SocialIcon href={socials.x} label="X">
               <IconX className="h-4 w-4" />
             </SocialIcon>
-            <SocialIcon>
+            <SocialIcon href={socials.youtube} label="YouTube">
               <IconYouTube className="h-5 w-5" />
             </SocialIcon>
-            <SocialIcon>
+            <SocialIcon href={socials.tiktok} label="TikTok">
               <IconTikTok className="h-4 w-4" />
             </SocialIcon>
           </div>

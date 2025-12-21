@@ -5,6 +5,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 type MenuCategory = { slug: string; name: string };
 
+type SearchItem = {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt?: string;
+};
+
 function IconSearch(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
@@ -87,28 +94,36 @@ function IconTikTok(props: React.SVGProps<SVGSVGElement>) {
 
 export function MobileDrawer({
   open,
-  mode,
   onClose,
 }: {
   open: boolean;
-  mode: "menu" | "search";
   onClose: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
 
+  // MENU: categorii
   const [cats, setCats] = useState<MenuCategory[]>([]);
   const [catsLoading, setCatsLoading] = useState(false);
 
+  // SEARCH
+  const [q, setQ] = useState("");
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [results, setResults] = useState<SearchItem[]>([]);
+
+  const showSearchResults = q.trim().length > 0;
+
+  // focus când se deschide drawer-ul
   useEffect(() => {
-    if (open && mode === "search") {
+    if (open) {
       const t = window.setTimeout(() => inputRef.current?.focus(), 80);
       return () => window.clearTimeout(t);
     }
-  }, [open, mode]);
+  }, [open]);
 
-  // Încarcă categoriile din WP (via Next API) doar când se deschide drawer-ul
+  // încarcă categoriile doar când vezi meniul (adică nu cauți)
   useEffect(() => {
     if (!open) return;
+    if (showSearchResults) return;
 
     let cancelled = false;
     setCatsLoading(true);
@@ -129,7 +144,45 @@ export function MobileDrawer({
     return () => {
       cancelled = true;
     };
-  }, [open]);
+  }, [open, showSearchResults]);
+
+  // debounce + fetch search results (doar când user scrie)
+  useEffect(() => {
+    if (!open) return;
+
+    const query = q.trim();
+    if (!query) {
+      setResults([]);
+      setSearchLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setSearchLoading(true);
+
+    const t = window.setTimeout(() => {
+      (async () => {
+        try {
+          const res = await fetch(
+            `/api/search?q=${encodeURIComponent(query)}`,
+            { cache: "no-store" }
+          );
+          if (!res.ok) return;
+          const data = await res.json();
+          if (!cancelled) setResults(Array.isArray(data) ? data : []);
+        } catch {
+          // ignore
+        } finally {
+          if (!cancelled) setSearchLoading(false);
+        }
+      })();
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t);
+    };
+  }, [q, open]);
 
   const catPairs = useMemo(() => {
     const list = cats.slice(0, 10);
@@ -141,13 +194,20 @@ export function MobileDrawer({
 
   if (!open) return null;
 
+  const closeAll = () => {
+    setQ("");
+    setResults([]);
+    setSearchLoading(false);
+    onClose();
+  };
+
   return (
     // IMPORTANT: containerul începe SUB header => header rămâne clickable
     <div className="fixed left-0 right-0 bottom-0 top-[var(--header-h)] z-[60] md:hidden">
       {/* overlay (doar sub header) */}
       <button
         className="absolute inset-0 bg-black/60"
-        onClick={onClose}
+        onClick={closeAll}
         aria-label="Închide meniul"
       />
 
@@ -156,98 +216,160 @@ export function MobileDrawer({
         <div className="h-full w-full bg-[#0b0b0b] text-white">
           {/* conținut scroll */}
           <div className="h-full overflow-y-auto px-4 py-4">
-            {/* Search box */}
+            {/* Search box (mereu) */}
             <div className="mb-6">
               <div className="flex items-center gap-2 rounded-md border border-white/15 bg-white/5 px-3 py-2">
                 <IconSearch className="h-4 w-4 opacity-80" />
                 <input
                   ref={inputRef}
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
                   placeholder="Caută știri..."
                   className="w-full bg-transparent text-sm outline-none placeholder:text-white/50"
                 />
-                <span className="opacity-60">→</span>
+                <button
+                  type="button"
+                  onClick={closeAll}
+                  className="ml-1 rounded px-2 py-1 text-sm opacity-70 hover:opacity-100"
+                  aria-label="Închide"
+                  title="Închide"
+                >
+                  ✕
+                </button>
               </div>
             </div>
 
-            {/* ACASĂ (UN SINGUR BUTON / LINK) */}
-            <div className="mb-6">
-              <Link
-                href="/"
-                onClick={onClose}
-                className="block text-sm font-extrabold uppercase tracking-wide text-white/95"
-              >
-                Acasă
-              </Link>
-              <div className="mt-3 h-px w-full bg-white/10" />
-            </div>
-
-            {/* CATEGORII */}
-            <div className="mb-16">
-              <div className="text-sm font-extrabold uppercase tracking-wide">
-                Categorii
-              </div>
-              <div className="mt-3 h-px w-full bg-white/10" />
-
-              {catsLoading && cats.length === 0 ? (
-                <div className="mt-4 text-sm text-white/60">Se încarcă…</div>
-              ) : (
-                <div className="mt-4 grid grid-cols-2 gap-x-10 gap-y-3">
-                  <div className="flex flex-col gap-3">
-                    {catPairs.left.map((c) => (
-                      <Link
-                        key={c.slug}
-                        href={`/categorie/${c.slug}`}
-                        onClick={onClose}
-                        className="text-sm font-semibold text-white/90 hover:text-white"
-                      >
-                        {c.name}
-                      </Link>
-                    ))}
+            {showSearchResults ? (
+              // =========================
+              // REZULTATE CĂUTARE
+              // =========================
+              <div className="mb-10">
+                {searchLoading ? (
+                  <div className="text-sm text-white/60">Se caută…</div>
+                ) : q.trim() && results.length === 0 ? (
+                  <div className="text-sm text-white/60">Niciun rezultat.</div>
+                ) : results.length > 0 ? (
+                  <div className="mt-2 overflow-hidden rounded-md border border-white/10">
+                    <ul className="max-h-[60vh] overflow-y-auto divide-y divide-white/10">
+                      {results.map((r) => (
+                        <li key={r.id}>
+                          <Link
+                            href={`/stire/${r.slug}`}
+                            onClick={() => {
+                              setQ("");
+                              setResults([]);
+                              setSearchLoading(false);
+                              onClose();
+                            }}
+                            className="block px-4 py-3 hover:bg-white/5"
+                          >
+                            <div className="text-sm font-extrabold leading-snug">
+                              {r.title}
+                            </div>
+                            {r.excerpt ? (
+                              <div className="mt-1 line-clamp-2 text-xs text-white/60">
+                                {r.excerpt}
+                              </div>
+                            ) : null}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  <div className="flex flex-col gap-3">
-                    {catPairs.right.map((c) => (
-                      <Link
-                        key={c.slug}
-                        href={`/categorie/${c.slug}`}
-                        onClick={onClose}
-                        className="text-sm font-semibold text-white/90 hover:text-white"
-                      >
-                        {c.name}
-                      </Link>
-                    ))}
+                ) : (
+                  <div className="text-sm text-white/60">
+                    Scrie ca să cauți articole.
+                  </div>
+                )}
+              </div>
+            ) : (
+              // =========================
+              // MENIU (când nu cauți)
+              // =========================
+              <>
+                {/* ACASĂ */}
+                <div className="mb-6">
+                  <Link
+                    href="/"
+                    onClick={closeAll}
+                    className="block text-sm font-extrabold uppercase tracking-wide text-white/95"
+                  >
+                    Acasă
+                  </Link>
+                  <div className="mt-3 h-px w-full bg-white/10" />
+                </div>
+
+                {/* CATEGORII */}
+                <div className="mb-16">
+                  <div className="text-sm font-extrabold uppercase tracking-wide">
+                    Categorii
+                  </div>
+                  <div className="mt-3 h-px w-full bg-white/10" />
+
+                  {catsLoading && cats.length === 0 ? (
+                    <div className="mt-4 text-sm text-white/60">
+                      Se încarcă…
+                    </div>
+                  ) : (
+                    <div className="mt-4 grid grid-cols-2 gap-x-10 gap-y-3">
+                      <div className="flex flex-col gap-3">
+                        {catPairs.left.map((c) => (
+                          <Link
+                            key={c.slug}
+                            href={`/categorie/${c.slug}`}
+                            onClick={closeAll}
+                            className="text-sm font-semibold text-white/90 hover:text-white"
+                          >
+                            {c.name}
+                          </Link>
+                        ))}
+                      </div>
+                      <div className="flex flex-col gap-3">
+                        {catPairs.right.map((c) => (
+                          <Link
+                            key={c.slug}
+                            href={`/categorie/${c.slug}`}
+                            onClick={closeAll}
+                            className="text-sm font-semibold text-white/90 hover:text-white"
+                          >
+                            {c.name}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* SOCIAL */}
+                <div className="mb-6 flex justify-between items-center">
+                  <div className="text-sm font-extrabold uppercase tracking-wide">
+                    Urmărește-ne
+                  </div>
+                  <div className="flex gap-3">
+                    <SocialIcon>
+                      <IconFacebook className="h-4 w-4" />
+                    </SocialIcon>
+                    <SocialIcon>
+                      <IconInstagram className="h-5 w-5" />
+                    </SocialIcon>
+                    <SocialIcon>
+                      <IconX className="h-4 w-4" />
+                    </SocialIcon>
+                    <SocialIcon>
+                      <IconYouTube className="h-5 w-5" />
+                    </SocialIcon>
+                    <SocialIcon>
+                      <IconTikTok className="h-4 w-4" />
+                    </SocialIcon>
                   </div>
                 </div>
-              )}
-            </div>
+                <div className="mt-3 h-px w-full bg-white/10" />
 
-            {/* SOCIAL (mai evident) */}
-            <div className="mb-6 flex justify-between items-center">
-              <div className="text-sm font-extrabold uppercase tracking-wide">
-                Urmărește-ne
-              </div>
-              <div className="flex gap-3">
-                <SocialIcon>
-                  <IconFacebook className="h-4 w-4" />
-                </SocialIcon>
-                <SocialIcon>
-                  <IconInstagram className="h-5 w-5" />
-                </SocialIcon>
-                <SocialIcon>
-                  <IconX className="h-4 w-4" />
-                </SocialIcon>
-                <SocialIcon>
-                  <IconYouTube className="h-5 w-5" />
-                </SocialIcon>
-                <SocialIcon>
-                  <IconTikTok className="h-4 w-4" />
-                </SocialIcon>
-              </div>
-            </div>
-            <div className="mt-3 h-px w-full bg-white/10" />
-
-            <div className="mt-8 text-xs text-white/50 justify-center text-center">
-              © CallatisPress — demo.
-            </div>
+                <div className="mt-8 text-xs text-white/50 justify-center text-center">
+                  © CallatisPress — demo.
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

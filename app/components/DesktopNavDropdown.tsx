@@ -164,7 +164,7 @@ export function DesktopNavDropdown({
 
 function hrefFor(post?: Post) {
   if (!post?.slug) return "#";
-  return `/articol/${post.slug}`;
+  return `/stire/${post.slug}`;
 }
 
 function HeroCard({ post }: { post?: Post }) {

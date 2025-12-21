@@ -100,7 +100,7 @@ export function StoryCard({ post }: { post: Post }) {
             </div>
 
             <ShareBar
-              path={`/stire/${post.slug}`}
+              url={`${process.env.NEXT_PUBLIC_SITE_URL}/stire/${post.slug}`}
               title={post.title}
               className="shrink-0"
             />

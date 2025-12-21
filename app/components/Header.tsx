@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { categories as demoCategories } from "../data/categories";
-import { CurrencyChip } from "./CurrencyChip";
+
 import { MobileDrawer } from "./MobileDrawer";
 import { HamburgerButton } from "./HamburgerButton";
 import { DesktopNavDropdown } from "./DesktopNavDropdown";
 import { getLatestPostsByCategory } from "./getPosts";
 import Image from "next/image";
 import { ThemeToggle } from "./theme-toggle";
+import { SearchPanel } from "./SearchPanel";
 
 function IconSearch(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -90,8 +91,6 @@ function IconTikTok(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
-
-type DropdownVariant = "hero-2small" | "two-hero" | "hero-list" | "three-hero";
 
 function dropdownVariantFor(slug: string) {
   const s = (slug || "").toLowerCase();
@@ -195,6 +194,12 @@ export function Header() {
     window.addEventListener("resize", setH);
     return () => window.removeEventListener("resize", setH);
   }, [desktopSearchOpen]);
+
+  useEffect(() => {
+    const on = () => setHoverCat((h) => (h ? { ...h } : h));
+    window.addEventListener("navposts:update", on);
+    return () => window.removeEventListener("navposts:update", on);
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -451,10 +456,6 @@ export function Header() {
 
               {/* DREAPTA */}
               <div className="flex items-center justify-end gap-3">
-                <div className="hidden xl:flex items-center gap-3">
-                  <CurrencyChip />
-                </div>
-
                 <button
                   onClick={() => setDesktopSearchOpen((v) => !v)}
                   className="inline-flex h-10 w-10 items-center justify-center rounded-md hover:bg-white/10"
@@ -470,84 +471,19 @@ export function Header() {
         </div>
 
         {desktopSearchOpen && (
-          <div className="hidden md:block bg-white">
-            <div className="mx-auto max-w-[80rem] px-4">
-              <div className="py-3">
-                <div className="relative">
-                  <div className="flex items-center gap-2 rounded-md border bg-white px-3 py-2 shadow-sm">
-                    <IconSearch className="h-4 w-4 text-gray-500" />
-                    <input
-                      value={desktopQ}
-                      onChange={(e) => setDesktopQ(e.target.value)}
-                      placeholder="Caută știri."
-                      className="w-full bg-transparent text-sm outline-none"
-                    />
-                    <button
-                      onClick={() => {
-                        setDesktopSearchOpen(false);
-                        setDesktopQ("");
-                        setDesktopResults([]);
-                      }}
-                      className="rounded-md px-2 py-1 text-sm text-gray-500 hover:text-gray-800"
-                      aria-label="Închide căutarea"
-                    >
-                      ✕
-                    </button>
-                  </div>
-
-                  {/* rezultate */}
-                  {(desktopSearching ||
-                    desktopResults.length > 0 ||
-                    debouncedDesktopQ.trim().length > 0) && (
-                    <div className="absolute left-0 right-0 mt-2 overflow-hidden rounded-md border bg-white shadow-lg">
-                      {desktopSearching ? (
-                        <div className="px-4 py-3 text-sm text-gray-600">
-                          Se caută…
-                        </div>
-                      ) : desktopResults.length === 0 ? (
-                        <div className="px-4 py-3 text-sm text-gray-600">
-                          Niciun rezultat.
-                        </div>
-                      ) : (
-                        <ul className="max-h-[60vh] overflow-auto">
-                          {desktopResults.map((r) => (
-                            <li key={r.id}>
-                              <Link
-                                href={`/stire/${r.slug}`}
-                                onClick={() => {
-                                  setDesktopSearchOpen(false);
-                                  setDesktopQ("");
-                                  setDesktopResults([]);
-                                }}
-                                className="block px-4 py-3 hover:bg-gray-50"
-                              >
-                                <div className="text-sm font-extrabold leading-snug text-gray-900">
-                                  {r.title}
-                                </div>
-                                {r.excerpt ? (
-                                  <div className="mt-1 line-clamp-2 text-xs text-gray-600">
-                                    {r.excerpt}
-                                  </div>
-                                ) : null}
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
+          <div className="hidden md:block bg-white dark:bg-[#0b131a]">
+            <div className="mx-auto max-w-[80rem] px-4 py-3">
+              <SearchPanel
+                autoFocus
+                onClose={() => setDesktopSearchOpen(false)}
+                onPickResult={() => setDesktopSearchOpen(false)}
+              />
             </div>
           </div>
         )}
       </header>
 
-      <MobileDrawer
-        open={menuOpen}
-        mode={drawerMode}
-        onClose={() => setMenuOpen(false)}
-      />
+      <MobileDrawer open={menuOpen} onClose={() => setMenuOpen(false)} />
     </>
   );
 }

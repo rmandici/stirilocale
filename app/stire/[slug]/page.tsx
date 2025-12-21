@@ -21,9 +21,9 @@ type Props = {
 // ✅ TEST: metadata statică pe articol (fără WP)
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const site = siteBase();
-  const { slug } = await Promise.resolve(params);
+  const { slug } = params;
 
-  const post = await getWpPostBySlug(slug); // + fallback demo dacă vrei
+  const post = await getWpPostBySlug(slug);
   if (!post) return {};
 
   const canonical = new URL(`/stire/${slug}`, site).toString();
@@ -34,24 +34,28 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       : new URL(post.image, site).toString()
     : new URL("/og-home.jpg", site).toString();
 
+  const desc = post.excerpt?.trim() || post.title;
+
   return {
     metadataBase: new URL(site),
     title: post.title,
-    description: post.excerpt,
+    description: desc,
     alternates: { canonical },
+
     openGraph: {
       type: "article",
       url: canonical,
       title: post.title,
-      description: post.excerpt,
-      images: [{ url: ogImage, width: 1200, height: 630 }],
+      description: desc,
       siteName: "Callatis Press",
       locale: "ro_RO",
+      images: [{ url: ogImage, width: 1200, height: 630 }],
     },
+
     twitter: {
       card: "summary_large_image",
       title: post.title,
-      description: post.excerpt,
+      description: desc,
       images: [ogImage],
     },
   };

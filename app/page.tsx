@@ -498,8 +498,9 @@ export default async function Home() {
                 </div>
 
                 {/* grid jos */}
+
                 <div className="md:col-span-12">
-                  <div className="mt-2 grid gap-6 md:grid-cols-4 auto-rows-fr">
+                  <div className="mt-2 grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-4 auto-rows-fr">
                     {featuredGrid.map((p) => {
                       const badgeClass = categoryColorClass(p.category?.slug);
 
@@ -515,7 +516,7 @@ export default async function Home() {
                             <img
                               src={p.image}
                               alt={p.title}
-                              className="h-48 w-full object-cover"
+                              className="h-32 sm:h-48 w-full object-cover"
                             />
                             {badgeClass ? (
                               <span
@@ -542,7 +543,7 @@ export default async function Home() {
 
                               <Link
                                 href={`/stire/${p.slug}`}
-                                className="mt-2 block text-lg font-extrabold leading-snug hover:underline"
+                                className="mt-2 block text-base sm:text-lg font-extrabold leading-snug hover:underline"
                               >
                                 {p.title}
                               </Link>

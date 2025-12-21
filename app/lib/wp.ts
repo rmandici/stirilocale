@@ -45,11 +45,24 @@ type WPCategory = {
   name: string;
 };
 
+function decodeHtmlEntities(str: string) {
+  return (str || "")
+    .replace(/&hellip;/g, "…")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
+
 function stripHtml(html: string) {
-  return (html || "")
+  const text = (html || "")
     .replace(/<[^>]*>/g, "")
     .replace(/\s+/g, " ")
     .trim();
+
+  return decodeHtmlEntities(text);
 }
 
 function detectHasVideo(html: string) {
