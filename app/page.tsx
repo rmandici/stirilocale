@@ -500,11 +500,15 @@ export default async function Home() {
 
                 {/* grid jos */}
                 <div className="md:col-span-12">
-                  <div className="mt-2 grid gap-6 md:grid-cols-4">
+                  <div className="mt-2 grid gap-6 md:grid-cols-4 auto-rows-fr">
                     {featuredGrid.map((p) => {
                       const badgeClass = categoryColorClass(p.category?.slug);
+
                       return (
-                        <div key={p.id} className="text-white">
+                        <div
+                          key={p.id}
+                          className="text-white h-full flex flex-col"
+                        >
                           <Link
                             href={`/stire/${p.slug}`}
                             className="relative block overflow-hidden"
@@ -529,19 +533,24 @@ export default async function Home() {
                             <span className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black/30 to-transparent" />
                           </Link>
 
-                          <div className="mt-3">
-                            <CategoryBadge
-                              slug={p.category.slug}
-                              name={p.category.name}
-                            />
-                            <Link
-                              href={`/stire/${p.slug}`}
-                              className="mt-2 block text-lg font-extrabold leading-snug hover:underline"
-                            >
-                              {p.title}
-                            </Link>
+                          {/* Text area: se întinde, ca footer-ul să ajungă jos */}
+                          <div className="mt-3 flex flex-col flex-1">
+                            <div>
+                              <CategoryBadge
+                                slug={p.category.slug}
+                                name={p.category.name}
+                              />
 
-                            <div className="mt-2 flex items-center justify-between gap-3">
+                              <Link
+                                href={`/stire/${p.slug}`}
+                                className="mt-2 block text-lg font-extrabold leading-snug hover:underline"
+                              >
+                                {p.title}
+                              </Link>
+                            </div>
+
+                            {/* Footer lipit jos */}
+                            <div className="mt-auto pt-2 flex items-center justify-between gap-3">
                               <div className="text-xs text-white/60">
                                 {p.author}
                               </div>
@@ -556,27 +565,40 @@ export default async function Home() {
                     })}
                   </div>
 
-                  <div className="mt-8 grid gap-6 md:grid-cols-2">
+                  <div className="mt-8 grid gap-6 md:grid-cols-2 auto-rows-fr">
                     {featuredExtra.slice(2, 4).map((p) => (
-                      <div key={p.id} className="bg-white/5 p-2 rounded-2xl">
-                        <CategoryBadge
-                          slug={p.category.slug}
-                          name={p.category.name}
-                        />
-                        <Link
-                          href={`/stire/${p.slug}`}
-                          className="mt-2 block text-xl font-extrabold leading-snug text-white hover:underline"
-                        >
-                          {p.title}
-                        </Link>
-                        <p className="mt-2 text-sm text-white/70 line-clamp-2">
-                          {p.excerpt}
-                        </p>
+                      <div
+                        key={p.id}
+                        className="bg-white/5 p-2 rounded-2xl flex flex-col h-full"
+                      >
+                        {/* Conținutul de sus */}
+                        <div className="flex-1">
+                          <CategoryBadge
+                            slug={p.category.slug}
+                            name={p.category.name}
+                          />
 
-                        <div className="mt-3">
-                          url=
-                          {`${process.env.NEXT_PUBLIC_SITE_URL}/stire/${p.slug}`}
-                          title={p.title}
+                          <Link
+                            href={`/stire/${p.slug}`}
+                            className="mt-2 block text-xl font-extrabold leading-snug text-white hover:underline"
+                          >
+                            {p.title}
+                          </Link>
+
+                          <p className="mt-2 text-sm text-white/70 line-clamp-2">
+                            {p.excerpt}
+                          </p>
+                        </div>
+
+                        {/* Footer lipit jos */}
+                        <div className="pt-3 flex justify-between">
+                          <div className="text-xs text-white/60">
+                            BY {p.author}
+                          </div>
+                          <ShareBar
+                            url={`${process.env.NEXT_PUBLIC_SITE_URL}/stire/${p.slug}`}
+                            title={p.title}
+                          />
                         </div>
                       </div>
                     ))}

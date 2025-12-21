@@ -103,16 +103,16 @@ export function ShareBar({
           type="button"
           onClick={onFacebook}
           className="
-            inline-flex items-center gap-2
-            rounded-lg px-2 py-2
+            inline-flex items-center gap-1
+            rounded-lg px-1.5 py-1.5
             bg-[#1877F2] text-white hover:brightness-95
-            text-xs font-extrabold
+            text-[10px] font-extrabold
             shadow-sm transition
           "
           aria-label="Share pe Facebook"
           title="Share pe Facebook"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
             <path
               fill="currentColor"
               d="M13.5 22v-8h2.6l.4-3h-3V9.1c0-.9.2-1.5 1.5-1.5H16V5c-.5-.1-1.5-.2-2.6-.2-2.6 0-4.3 1.6-4.3 4.5V11H7v3h2.1v8h4.4z"
@@ -126,16 +126,16 @@ export function ShareBar({
           type="button"
           onClick={onWhatsApp}
           className="
-            inline-flex items-center gap-2
-            rounded-lg px-2 py-2
+            inline-flex items-center gap-1
+            rounded-lg px-1.5 py-1.5
             bg-[#128C7E] text-white hover:brightness-95
-            text-xs font-extrabold
+            text-[10px] font-extrabold
             shadow-sm transition
           "
           aria-label="Share pe WhatsApp"
           title="Share pe WhatsApp"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
             <path
               fill="currentColor"
               d="M20.5 3.5A11 11 0 0 0 3.3 17.7L2 22l4.4-1.2A11 11 0 0 0 22 12a11 11 0 0 0-1.5-8.5zM12 20a9 9 0 0 1-4.6-1.3l-.3-.2-2.6.7.7-2.5-.2-.3A9 9 0 1 1 12 20zm5.2-6.7c-.3-.2-1.8-.9-2.1-1s-.5-.2-.7.2-.8 1-1 1.2-.4.2-.7 0a7.4 7.4 0 0 1-2.2-1.4 8 8 0 0 1-1.5-1.8c-.2-.3 0-.5.1-.6l.5-.6c.2-.2.2-.4.3-.6 0-.2 0-.4-.1-.6s-.7-1.7-.9-2.3c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.2 1.1-1.2 2.8s1.2 3.2 1.3 3.4c.2.2 2.4 3.7 5.9 5.2.8.3 1.4.5 1.9.6.8.3 1.6.2 2.2.1.7-.1 1.8-.7 2-1.4.3-.7.3-1.3.2-1.4-.1-.1-.3-.2-.6-.4z"
@@ -149,17 +149,17 @@ export function ShareBar({
           type="button"
           onClick={onCopy}
           className="
-            inline-flex items-center gap-2
-            rounded-lg px-2 py-2
+            inline-flex items-center gap-1
+            rounded-lg px-1.5 py-1.5
             bg-gray-200 text-gray-900 hover:bg-gray-300
             dark:bg-white/10 dark:text-white dark:hover:bg-white/15
-            text-xs font-extrabold
+            text-[10px] font-extrabold
             shadow-sm transition
           "
           aria-label="Copiază link"
           title="Copiază link"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
             <path
               fill="currentColor"
               d="M16 1H6a2 2 0 0 0-2 2v12h2V3h10V1zm3 4H10a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 16H10V7h9v14z"

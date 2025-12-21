@@ -1,7 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { Metadata } from "next";
 
 import { PopularInCategory } from "../../components/PopularInCategory";
 import { posts as demoPosts } from "../../data/posts";
@@ -13,52 +12,6 @@ function fmtDate(iso: string) {
   } catch {
     return "";
   }
-}
-
-function getSiteBase() {
-  const site =
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
-  return site;
-}
-
-export async function generateMetadata({
-  params,
-}: {
-  params: { slug: string };
-}): Promise<Metadata> {
-  const slug = params.slug;
-
-  const wpPost = await getWpPostBySlug(slug);
-  const demoPost = demoPosts.find((p) => p.slug === slug) ?? null;
-  const post = wpPost ?? demoPost;
-
-  if (!post) return {};
-
-  const site =
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
-
-  const canonical = site
-    ? new URL(`/stire/${post.slug}`, site).toString()
-    : `https://callatispress.ro/stire/${post.slug}`; // fallback hard
-
-  return {
-    title: post.title,
-    description: post.excerpt || "",
-    alternates: { canonical },
-    openGraph: {
-      type: "article",
-      url: canonical, // ✅ absolut, exact ca canonical
-      title: post.title,
-      description: post.excerpt || "",
-      siteName: "Callatis Press",
-      locale: "ro_RO",
-      images: post.image
-        ? [{ url: post.image, width: 1200, height: 630, alt: post.title }]
-        : [],
-    },
-  };
 }
 
 /**

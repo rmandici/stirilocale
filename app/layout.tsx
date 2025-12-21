@@ -13,7 +13,6 @@ const site =
 export const metadata: Metadata = {
   metadataBase: site ? new URL(site) : undefined,
 
-  // ✅ template, ca paginile să pună titlul lor
   title: {
     default: "Callatis Press",
     template: "%s | Știri Locale",
@@ -24,9 +23,9 @@ export const metadata: Metadata = {
 
   openGraph: {
     type: "website",
-    url: site || undefined,
     siteName: "Callatis Press",
     locale: "ro_RO",
+    // ✅ NU url aici
   },
 
   twitter: {
