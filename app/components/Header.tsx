@@ -303,8 +303,8 @@ export function Header() {
           </div>
         </div>
 
-        {/* MOBILE: roșu */}
-        <div className="md:hidden bg-red-700 text-white">
+        {/* MOBILE: albastru */}
+        <div className="md:hidden bg-[#0B2A45] dark:bg-[#0b131a] text-white">
           <div className="mx-auto max-w-[80rem] px-4">
             <div className="flex h-14 items-center justify-between">
               <div className="flex items-center gap-2">

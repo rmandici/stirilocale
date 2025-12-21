@@ -13,6 +13,30 @@ function fmtDate(iso: string) {
   }
 }
 
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string };
+}) {
+  const slug = params.slug;
+  const post = await getWpPostBySlug(slug); // sau fallback demo
+
+  if (!post) return {};
+
+  const url = `${process.env.NEXT_PUBLIC_SITE_URL}/stire/${post.slug}`;
+
+  return {
+    title: post.title,
+    openGraph: {
+      title: post.title,
+      description: post.excerpt,
+      url,
+      images: post.image ? [{ url: post.image }] : [],
+      type: "article",
+    },
+  };
+}
+
 /**
  * Scoate primul bloc <figure><img ...></figure> din content
  * DOAR dacă imaginea este aceeași cu featured (acceptă și variantele -1024x683 etc).

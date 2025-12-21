@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { Post } from "../data/posts";
+import { ShareBar } from "./ShareBar";
 
 function fmtDate(iso: string) {
   try {
@@ -15,6 +16,26 @@ function fmtDate(iso: string) {
     });
   } catch {
     return "";
+  }
+}
+
+function categoryColorClass(slug?: string): string | null {
+  const s = (slug ?? "").toLowerCase();
+
+  switch (s) {
+    case "actualitate":
+      return "bg-teal-600 text-white";
+    case "local":
+      return "bg-emerald-700 text-white";
+    case "politica":
+      return "bg-orange-700 text-white";
+    case "sport":
+      return "bg-green-600 text-white";
+    case "ultima-ora":
+    case "ultima-oră":
+      return "bg-yellow-400 text-black";
+    default:
+      return null; // doar cele 5 au badge
   }
 }
 
@@ -40,36 +61,65 @@ export function FeaturedHero({ post }: { post: Post }) {
     return () => clearInterval(t);
   }, [imgs.length]);
 
+  const badgeClass = categoryColorClass(post.category?.slug);
+
   return (
     <section className="group w-full">
       <Link href={`/stire/${post.slug}`} className="block">
         {/* ===== MOBILE ===== */}
         <div className="md:hidden">
-          <div className="relative aspect-[16/10]">
-            <Image
-              src={imgs[idx]}
-              alt={post.title}
-              fill
-              className="object-cover transition-opacity duration-500"
-              sizes="100vw"
-              priority
-            />
+          <div className="relative aspect-[16/10] overflow-hidden">
+            {imgs[idx] ? (
+              <Image
+                src={imgs[idx]}
+                alt={post.title}
+                fill
+                className="object-cover transition-opacity duration-500"
+                sizes="100vw"
+                priority
+              />
+            ) : (
+              <div className="absolute inset-0 bg-black/5 dark:bg-white/10" />
+            )}
+
+            {/* ✅ badge în poză */}
+            {badgeClass ? (
+              <span
+                className={[
+                  "absolute left-3 top-3 inline-flex items-center",
+                  "px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide",
+                  "rounded-md shadow-sm",
+                  badgeClass,
+                ].join(" ")}
+              >
+                {post.category.name}
+              </span>
+            ) : null}
+
+            <span className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/35 to-transparent" />
           </div>
 
           <div className="pt-4">
-            <div className="inline-flex bg-red-600 px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white">
-              {post.category.name}
-            </div>
-
-            <h2 className="mt-2 text-2xl font-extrabold leading-tight">
+            <h2 className="text-2xl font-extrabold leading-tight">
               <span className="u-underline">{post.title}</span>
             </h2>
 
-            <p className="mt-3 text-base text-gray-600">{post.excerpt}</p>
+            <p className="mt-3 text-base text-gray-600 dark:text-white/70">
+              {post.excerpt}
+            </p>
 
-            <div className="mt-4 text-xs text-gray-400">
-              BY {post.author ? `${post.author} • ` : ""}
-              {fmtDate(post.publishedAt)}
+            {/* meta + share */}
+            <div className="mt-4 flex items-center justify-between gap-3 text-xs text-gray-400 dark:text-white/50">
+              <div className="min-w-0 truncate">
+                BY {post.author ? `${post.author} • ` : ""}
+                {fmtDate(post.publishedAt)}
+              </div>
+
+              <ShareBar
+                path={`/stire/${post.slug}`}
+                title={post.title}
+                className="shrink-0"
+              />
             </div>
           </div>
         </div>
@@ -77,35 +127,53 @@ export function FeaturedHero({ post }: { post: Post }) {
         {/* ===== DESKTOP ===== */}
         <div className="hidden md:block">
           <div className="pt-2">
-            {/* titlu mare */}
             <h2 className="mt-5 text-[42px] font-extrabold leading-[1.02] tracking-tight">
               <span className="u-underline">{post.title}</span>
             </h2>
 
-            {/* meta mic, fara bold */}
-            <div className="mt-3 text-[12px] font-normal tracking-wide text-gray-500">
-              {post.author ? `BY ${post.author} · ` : ""}
-              {fmtDate(post.publishedAt)}
-            </div>
+            <div className="mt-3 flex items-center justify-between gap-3 text-[12px] font-normal tracking-wide text-gray-500 dark:text-white/50">
+              <div className="min-w-0 truncate">
+                {post.author ? `BY ${post.author} · ` : ""}
+                {fmtDate(post.publishedAt)}
+              </div>
 
-            {/* imagine FULL WIDTH, inaltime controlata */}
-            <div className="mt-6 relative w-full overflow-hidden md:h-[420px]">
-              <Image
-                src={imgs[idx]}
-                alt={post.title}
-                fill
-                className="object-cover object-center"
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                priority
+              <ShareBar
+                path={`/stire/${post.slug}`}
+                title={post.title}
+                className="shrink-0"
               />
             </div>
 
-            {/* excerpt jos (optional) */}
-            {/* {post.excerpt ? (
-              <p className="mt-6 max-w-[70ch] text-[17px] leading-relaxed text-gray-700">
-                {post.excerpt}
-              </p>
-            ) : null} */}
+            <div className="mt-6 relative w-full overflow-hidden md:h-[420px]">
+              {imgs[idx] ? (
+                <Image
+                  src={imgs[idx]}
+                  alt={post.title}
+                  fill
+                  className="object-cover object-center"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  priority
+                />
+              ) : (
+                <div className="absolute inset-0 bg-black/5 dark:bg-white/10" />
+              )}
+
+              {/* ✅ badge în poză (și pe desktop) */}
+              {badgeClass ? (
+                <span
+                  className={[
+                    "absolute left-4 top-4 inline-flex items-center",
+                    "px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide",
+                    "rounded-md shadow-sm",
+                    badgeClass,
+                  ].join(" ")}
+                >
+                  {post.category.name}
+                </span>
+              ) : null}
+
+              <span className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/30 to-transparent" />
+            </div>
           </div>
         </div>
       </Link>
