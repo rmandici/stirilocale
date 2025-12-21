@@ -10,6 +10,8 @@ import { CategoryRemaining } from "../../components/CategoryRemaining";
 
 import { getWpPosts } from "../../lib/wp";
 
+export const dynamic = "force-dynamic"; // temporar: evită caching ciudat pe edge
+
 const WP_BASE = process.env.WP_BASE_URL;
 
 function fmtDate(iso: string) {
@@ -22,6 +24,19 @@ function fmtDate(iso: string) {
 
 type WPCategory = { id: number; slug: string; name: string };
 
+function wpHeaders() {
+  return {
+    accept: "application/json",
+    "user-agent":
+      "Mozilla/5.0 (compatible; CallatisPressBot/1.0; +https://callatispress.ro)",
+  };
+}
+
+function isJsonResponse(res: Response) {
+  const ct = res.headers.get("content-type") || "";
+  return ct.includes("application/json");
+}
+
 async function getWpCategoryBySlug(slug: string): Promise<WPCategory | null> {
   try {
     if (!WP_BASE) return null;
@@ -30,10 +45,15 @@ async function getWpCategoryBySlug(slug: string): Promise<WPCategory | null> {
       `${WP_BASE}/wp-json/wp/v2/categories?slug=${encodeURIComponent(
         slug
       )}&per_page=1`,
-      { next: { revalidate: 300 } }
+      {
+        cache: "no-store", // temporar: ca să nu prinzi rezultate vechi / incomplete
+        headers: wpHeaders(),
+      }
     );
 
     if (!res.ok) return null;
+    if (!isJsonResponse(res)) return null;
+
     const arr = (await res.json()) as WPCategory[];
     return arr?.[0] ?? null;
   } catch {
@@ -44,19 +64,25 @@ async function getWpCategoryBySlug(slug: string): Promise<WPCategory | null> {
 export default async function CategoryPage({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: { slug: string };
 }) {
-  const { slug } = await params;
+  const slug = params?.slug;
+
+  if (!slug) return notFound();
 
   // 1) WP categorie (pt titlu)
   const wpCat = await getWpCategoryBySlug(slug);
 
-  // 2) WP postări deja filtrate de WP (NU mai filtrăm după p.category.slug)
+  // 2) WP postări filtrate de WP
+  // getWpPosts deja are headers + isJson checks în lib/wp.ts (din ce mi-ai trimis)
   const wpPosts = await getWpPosts({ perPage: 50, categorySlug: slug });
 
-  // 3) Fallback demo dacă WP nu e disponibil
+  // 3) Fallback demo
   const demoCat = demoCategories.find((c) => c.slug === slug) ?? null;
 
+  // IMPORTANT:
+  // Dacă WP nu răspunde, dar ai categoria în demo -> mergi mai departe cu demo.
+  // Dacă nu există nici în WP, nici în demo -> 404 real.
   const cat = wpCat
     ? { slug: wpCat.slug, name: wpCat.name }
     : demoCat
@@ -72,12 +98,15 @@ export default async function CategoryPage({
           .filter((p) => p.category?.slug === slug)
           .sort((a, b) => +new Date(b.publishedAt) - +new Date(a.publishedAt));
 
+  // Dacă nu există niciun post în categorie (nici WP, nici demo),
+  // nu dăm neapărat 404 (poate categoria există dar e goală).
+  // Totuși, dacă vrei 404 pe categorii goale, schimbă condiția.
+  const catFeatured = catPosts[0] ?? null;
+  const remaining = catPosts.slice(4);
+
   const mostRead = [...demoPosts].sort(
     (a, b) => (b.views ?? 0) - (a.views ?? 0)
   );
-
-  const catFeatured = catPosts[0] ?? null;
-  const remaining = catPosts.slice(4);
 
   return (
     <main>
