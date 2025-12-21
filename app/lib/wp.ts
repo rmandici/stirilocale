@@ -194,30 +194,62 @@ export async function getWpPosts(opts?: {
   }
 }
 
-export async function getWpPostBySlug(slug: string) {
+// lib/wp.ts
+export type WpPostResult =
+  | { kind: "ok"; post: Post }
+  | { kind: "not_found" }
+  | { kind: "error"; status?: number; message: string };
+
+async function fetchJsonWithRetry(url: string, init: RequestInit, tries = 2) {
+  let lastErr: unknown;
+  for (let i = 0; i < tries; i++) {
+    try {
+      const res = await fetch(url, init);
+      return res;
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr;
+}
+
+export async function getWpPostBySlug(slug: string): Promise<WpPostResult> {
   try {
-    if (!WP_BASE) return null;
+    if (!WP_BASE) return { kind: "error", message: "WP_BASE_URL missing" };
 
     const url = `${WP_BASE}/wp-json/wp/v2/posts?slug=${encodeURIComponent(
       slug
     )}&_embed=1`;
 
-    const res = await fetch(url, {
-      next: { revalidate: 60 },
-      headers: wpHeaders(),
-    });
-    if (!res.ok) return null;
-    if (!isJsonResponse(res)) return null;
+    // IMPORTANT: evităm cache negativ / flapping între edge nodes
+    const res = await fetchJsonWithRetry(
+      url,
+      {
+        cache: "no-store",
+        headers: wpHeaders(),
+      },
+      2
+    );
+
+    if (!res.ok) {
+      // 404 real de la WP -> not_found; altfel error
+      if (res.status === 404) return { kind: "not_found" };
+      return { kind: "error", status: res.status, message: "WP non-OK" };
+    }
+
+    if (!isJsonResponse(res)) {
+      return { kind: "error", status: res.status, message: "WP non-JSON" };
+    }
 
     const arr: WPPost[] = await res.json();
-    if (!arr.length) return null;
+    if (!arr.length) return { kind: "not_found" };
 
     const p = arr[0];
     const content = p.content?.rendered ?? "";
     const image = featuredImageFromEmbedded(p);
     const category = firstCategoryFromEmbedded(p);
 
-    return {
+    const post: Post = {
       id: String(p.id),
       slug: p.slug,
       title: stripHtml(p.title?.rendered ?? ""),
@@ -232,8 +264,13 @@ export async function getWpPostBySlug(slug: string) {
       featured: false,
       views: 0,
       video: undefined,
-    } satisfies Post;
-  } catch {
-    return null;
+    };
+
+    return { kind: "ok", post };
+  } catch (e) {
+    return {
+      kind: "error",
+      message: e instanceof Error ? e.message : "WP fetch failed",
+    };
   }
 }

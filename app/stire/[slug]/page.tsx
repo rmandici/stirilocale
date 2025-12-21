@@ -7,6 +7,9 @@ import { PopularInCategory } from "../../components/PopularInCategory";
 import { posts as demoPosts } from "../../data/posts";
 import { getWpPostBySlug, getWpPosts } from "../../lib/wp";
 
+// Temporar, ca să nu existe caching negativ / flapping între edge nodes
+export const dynamic = "force-dynamic";
+
 function siteBase() {
   const s =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
@@ -18,21 +21,75 @@ type Props = {
   params: { slug: string };
 };
 
-// ✅ TEST: metadata statică pe articol (fără WP)
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const site = siteBase();
   const { slug } = params;
 
-  const post = await getWpPostBySlug(slug);
-  if (!post) return {};
-
+  const r = await getWpPostBySlug(slug);
   const canonical = new URL(`/stire/${slug}`, site).toString();
+  const fallbackOg = new URL("/og-home.jpg", site).toString();
+
+  // Dacă WP spune clar "nu există"
+  if (r.kind === "not_found") {
+    return {
+      metadataBase: new URL(site),
+      title: "Callatis Press",
+      description:
+        "Știri din România: actualitate, local, politică, sport, ultimă oră.",
+      alternates: { canonical },
+      openGraph: {
+        type: "website",
+        url: canonical,
+        title: "Callatis Press",
+        description:
+          "Știri din România: actualitate, local, politică, sport, ultimă oră.",
+        images: [{ url: fallbackOg, width: 1200, height: 630 }],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: "Callatis Press",
+        description:
+          "Știri din România: actualitate, local, politică, sport, ultimă oră.",
+        images: [fallbackOg],
+      },
+    };
+  }
+
+  // Dacă WP are o eroare tranzitorie (timeout / 5xx / non-json etc.)
+  // IMPORTANT: nu returnăm {} (Facebook rămâne cu meta ciudată)
+  if (r.kind === "error") {
+    return {
+      metadataBase: new URL(site),
+      title: "Callatis Press",
+      description:
+        "Știri din România: actualitate, local, politică, sport, ultimă oră.",
+      alternates: { canonical },
+      openGraph: {
+        type: "website",
+        url: canonical,
+        title: "Callatis Press",
+        description:
+          "Știri din România: actualitate, local, politică, sport, ultimă oră.",
+        images: [{ url: fallbackOg, width: 1200, height: 630 }],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: "Callatis Press",
+        description:
+          "Știri din România: actualitate, local, politică, sport, ultimă oră.",
+        images: [fallbackOg],
+      },
+    };
+  }
+
+  // OK
+  const post = r.post;
 
   const ogImage = post.image
     ? post.image.startsWith("http")
       ? post.image
       : new URL(post.image, site).toString()
-    : new URL("/og-home.jpg", site).toString();
+    : fallbackOg;
 
   const desc = post.excerpt?.trim() || post.title;
 
@@ -96,10 +153,29 @@ export default async function StirePage({
 }) {
   const { slug } = await params;
 
-  const wpPost = await getWpPostBySlug(slug);
+  const r = await getWpPostBySlug(slug);
+
+  // Demo fallback (din data/posts)
   const demoPost = demoPosts.find((p) => p.slug === slug) ?? null;
 
+  // Dacă WP zice "not found"
+  if (r.kind === "not_found") {
+    if (!demoPost) return notFound();
+    // continuăm cu demo
+  }
+
+  // Dacă WP are eroare -> NU 404 (Facebook cache-uiește 404 ca “mort”)
+  if (r.kind === "error") {
+    if (!demoPost) {
+      // mai corect e 500 decât 404
+      throw new Error(`WP error for slug=${slug}: ${r.message}`);
+    }
+    // continuăm cu demo
+  }
+
+  const wpPost = r.kind === "ok" ? r.post : null;
   const post = wpPost ?? demoPost;
+
   if (!post) return notFound();
 
   const isWP = Boolean(wpPost);
@@ -124,6 +200,8 @@ export default async function StirePage({
   const gallery = (!isWP && post.images?.length ? post.images : [])
     .filter(Boolean)
     .slice(0, 5);
+
+  void gallery; // dacă nu folosești gallery încă, evită warning; poți șterge linia când îl folosești
 
   const contentHtml = isWP
     ? removeFirstDuplicateFeaturedImage(post.content ?? "", post.image)
