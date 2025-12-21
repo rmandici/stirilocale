@@ -3,13 +3,19 @@ import { NextResponse } from "next/server";
 const WP_BASE = process.env.WP_BASE_URL;
 
 type WPRendered = { rendered: string };
+
 type WPPost = {
   id: number;
   slug: string;
   date: string;
   title: WPRendered;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  _embedded?: any;
+  _embedded?: {
+    author?: Array<{ name?: string }>;
+    "wp:featuredmedia"?: Array<{ source_url?: string }>;
+    "wp:term"?: Array<
+      Array<{ taxonomy?: string; slug?: string; name?: string }>
+    >;
+  };
 };
 
 type WPCategory = { id: number; slug: string; name: string };
@@ -21,6 +27,14 @@ function stripHtml(html: string) {
     .trim();
 }
 
+function fmtDate(iso: string) {
+  try {
+    return new Date(iso).toLocaleDateString("ro-RO");
+  } catch {
+    return "recent";
+  }
+}
+
 function wpHeaders() {
   return {
     accept: "application/json",
@@ -29,96 +43,53 @@ function wpHeaders() {
   };
 }
 
-function featuredImageFromEmbedded(p: WPPost) {
-  const media = p._embedded?.["wp:featuredmedia"]?.[0];
-  return media?.source_url ?? "";
-}
-
-function authorNameFromEmbedded(p: WPPost) {
-  return p._embedded?.author?.[0]?.name ?? "Redacție";
-}
-
-function firstCategoryFromEmbedded(p: WPPost) {
-  const terms = p._embedded?.["wp:term"];
-  if (Array.isArray(terms)) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const cats = terms.flat().filter((t: any) => t?.taxonomy === "category");
-    if (cats?.length) return { slug: cats[0].slug, name: cats[0].name };
-  }
-  return { slug: "general", name: "General" };
-}
-
-function fmtDate(iso: string) {
-  try {
-    return new Date(iso).toLocaleDateString("ro-RO");
-  } catch {
-    return "";
-  }
-}
-
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function GET(req: Request) {
   try {
-    if (!WP_BASE) {
-      return NextResponse.json([], {
-        headers: { "cache-control": "no-store" },
-      });
-    }
+    if (!WP_BASE) return NextResponse.json([]);
 
     const { searchParams } = new URL(req.url);
-    const categorySlug = String(searchParams.get("category") ?? "").trim();
-    const limit = Math.min(Number(searchParams.get("limit") ?? 6) || 6, 10);
+    const categorySlug = (searchParams.get("category") || "").trim();
+    const limit = Math.min(Number(searchParams.get("limit") || 6), 10);
 
-    if (!categorySlug) {
-      return NextResponse.json([], {
-        headers: { "cache-control": "no-store" },
-      });
-    }
+    if (!categorySlug) return NextResponse.json([]);
 
-    // 1) găsim ID-ul categoriei după slug
+    // 1) find category ID by slug
     const catRes = await fetch(
       `${WP_BASE}/wp-json/wp/v2/categories?slug=${encodeURIComponent(
         categorySlug
       )}`,
       { headers: wpHeaders(), cache: "no-store" }
     );
+
     if (!catRes.ok) return NextResponse.json([]);
 
-    const cats: WPCategory[] = await catRes.json();
+    const cats = (await catRes.json()) as WPCategory[];
     const catId = cats?.[0]?.id;
     if (!catId) return NextResponse.json([]);
 
-    // 2) luăm postări din categoria aia
-    const qs = new URLSearchParams({
-      per_page: String(limit),
-      categories: String(catId),
-      _embed: "1",
-    });
-
+    // 2) fetch posts
     const postsRes = await fetch(
-      `${WP_BASE}/wp-json/wp/v2/posts?${qs.toString()}`,
-      {
-        headers: wpHeaders(),
-        cache: "no-store",
-      }
+      `${WP_BASE}/wp-json/wp/v2/posts?per_page=${limit}&categories=${catId}&_embed=1`,
+      { headers: wpHeaders(), cache: "no-store" }
     );
+
     if (!postsRes.ok) return NextResponse.json([]);
 
-    const wpPosts: WPPost[] = await postsRes.json();
+    const wpPosts = (await postsRes.json()) as WPPost[];
 
     const out = wpPosts.map((p) => {
-      const cat = firstCategoryFromEmbedded(p);
+      const image = p._embedded?.["wp:featuredmedia"]?.[0]?.source_url || "";
+      const author = p._embedded?.author?.[0]?.name || "Redacție";
       return {
-        id: String(p.id),
         slug: p.slug,
-        title: stripHtml(p.title?.rendered ?? ""),
-        image: featuredImageFromEmbedded(p),
-        author: authorNameFromEmbedded(p),
+        title: stripHtml(p.title?.rendered || ""),
+        categorySlug,
+        image: image || undefined,
+        author,
         dateLabel: fmtDate(p.date),
-        categorySlug: cat.slug,
-        categoryName: cat.name,
       };
     });
 
@@ -126,6 +97,6 @@ export async function GET(req: Request) {
       headers: { "cache-control": "no-store, max-age=0" },
     });
   } catch {
-    return NextResponse.json([], { headers: { "cache-control": "no-store" } });
+    return NextResponse.json([]);
   }
 }

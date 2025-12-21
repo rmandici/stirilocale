@@ -32,18 +32,21 @@ export function DesktopNavDropdown({
   if (!open) return null;
 
   const items = (posts ?? []).slice(0, 6);
-  const p0 = items[0];
-  const p1 = items[1];
-  const p2 = items[2];
-  const p3 = items[3];
-  const rest = items.slice(4);
+
+  // ✅ fallback doar când chiar nu ai nimic
+  const hasAny = items.length > 0;
+
+  // Helpers ca să nu mai indexăm “orb”
+  const hero = items[0];
+  const smalls = items.slice(1, 3); // până la 2
+  const minis = items.slice(3, 6); // până la 3
+  const list = items.slice(1, 6); // până la 5
 
   return (
     <div
       className="absolute left-0 top-full z-[60] w-full"
       onMouseLeave={onClose}
     >
-      {/* Banner mai mare + animație smooth */}
       <div
         className={[
           "bg-[#0b0b0b] text-white",
@@ -55,7 +58,6 @@ export function DesktopNavDropdown({
       >
         <div className="mx-auto max-w-6xl px-4">
           <div className="py-7">
-            {/* Header dropdown */}
             <div className="flex items-center justify-between pb-5">
               <span className="inline-flex items-center bg-red-600 px-4 py-2 text-xs font-extrabold uppercase tracking-wide">
                 {categoryName}
@@ -69,90 +71,91 @@ export function DesktopNavDropdown({
               </Link>
             </div>
 
-            {/* Layout-uri diferite */}
-            {variant === "hero-2small" && (
+            {/* ✅ Layout-uri, dar fără “carduri goale” */}
+            {variant === "hero-2small" && hasAny && (
               <div className="grid grid-cols-12 gap-6">
-                {/* HERO mare */}
                 <div className="col-span-7">
-                  <HeroCard post={p0} />
+                  <HeroCard post={hero} />
                 </div>
 
-                {/* 2 mici + listă */}
-                <div className="col-span-5 grid grid-rows-2 gap-6">
-                  <SmallCard post={p1} />
-                  <SmallCard post={p2} />
+                {/* 0-2 smalls */}
+                <div className="col-span-5 grid gap-6">
+                  {smalls.map((p) => (
+                    <SmallCard key={p.slug} post={p} />
+                  ))}
                 </div>
 
-                {/* listă sub (opțional) */}
-                <div className="col-span-12">
-                  <div className="grid grid-cols-3 gap-6">
-                    <MiniCard post={p3} />
-                    <MiniCard post={rest[0]} />
-                    <MiniCard post={rest[1]} />
+                {/* minis doar dacă există */}
+                {minis.length > 0 && (
+                  <div className="col-span-12">
+                    <div className="grid grid-cols-3 gap-6">
+                      {minis.map((p) => (
+                        <MiniCard key={p.slug} post={p} />
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             )}
 
-            {variant === "two-hero" && (
+            {variant === "two-hero" && hasAny && (
               <div className="grid grid-cols-12 gap-6">
                 <div className="col-span-6">
-                  <HeroCard post={p0} />
+                  <HeroCard post={items[0]} />
                 </div>
-                <div className="col-span-6">
-                  <HeroCard post={p1} />
-                </div>
+                {items[1] && (
+                  <div className="col-span-6">
+                    <HeroCard post={items[1]} />
+                  </div>
+                )}
 
-                <div className="col-span-12 grid grid-cols-3 gap-6">
-                  <MiniCard post={p2} />
-                  <MiniCard post={p3} />
-                  <MiniCard post={rest[0]} />
-                </div>
+                {items.length > 2 && (
+                  <div className="col-span-12 grid grid-cols-3 gap-6">
+                    {items.slice(2, 5).map((p) => (
+                      <MiniCard key={p.slug} post={p} />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
-            {variant === "hero-list" && (
+            {variant === "hero-list" && hasAny && (
               <div className="grid grid-cols-12 gap-6">
                 <div className="col-span-8">
-                  <HeroCard post={p0} />
+                  <HeroCard post={items[0]} />
                 </div>
 
                 <div className="col-span-4">
                   <div className="space-y-4">
-                    <ListItem post={p1} />
-                    <ListItem post={p2} />
-                    <ListItem post={p3} />
-                    <ListItem post={rest[0]} />
+                    {list.map((p) => (
+                      <ListItem key={p.slug} post={p} />
+                    ))}
                   </div>
                 </div>
               </div>
             )}
 
-            {variant === "three-hero" && (
+            {variant === "three-hero" && hasAny && (
               <div className="grid grid-cols-12 gap-6">
-                <div className="col-span-4">
-                  <HeroCard post={p0} />
-                </div>
-                <div className="col-span-4">
-                  <HeroCard post={p1} />
-                </div>
-                <div className="col-span-4">
-                  <HeroCard post={p2} />
-                </div>
+                {items.slice(0, 3).map((p) => (
+                  <div key={p.slug} className="col-span-4">
+                    <HeroCard post={p} />
+                  </div>
+                ))}
 
-                <div className="col-span-12 grid grid-cols-3 gap-6">
-                  <MiniCard post={p3} />
-                  <MiniCard post={rest[0]} />
-                  <MiniCard post={rest[1]} />
-                </div>
+                {items.length > 3 && (
+                  <div className="col-span-12 grid grid-cols-3 gap-6">
+                    {items.slice(3, 6).map((p) => (
+                      <MiniCard key={p.slug} post={p} />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
-            {/* fallback dacă nu ai posturi */}
-            {!items.length && (
+            {!hasAny && (
               <div className="rounded-lg border border-white/10 bg-white/5 p-6 text-sm text-white/70">
-                Nu există articole încă (placeholder). Le vom încărca din
-                WordPress.
+                Nu există articole încă. Le vom încărca din WordPress.
               </div>
             )}
           </div>
@@ -167,11 +170,12 @@ function hrefFor(post?: Post) {
   return `/stire/${post.slug}`;
 }
 
-function HeroCard({ post }: { post?: Post }) {
+/** ✅ Cardurile: nu mai pun placeholder text dacă post e undefined (dar oricum nu mai chemăm cu undefined) */
+function HeroCard({ post }: { post: Post }) {
   return (
     <Link href={hrefFor(post)} className="group block">
       <div className="relative h-[300px] w-full overflow-hidden bg-white/10">
-        {post?.image ? (
+        {post.image ? (
           <Image
             src={post.image}
             alt={post.title}
@@ -184,18 +188,17 @@ function HeroCard({ post }: { post?: Post }) {
           </div>
         )}
 
-        {/* gradient Foxiz-ish */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-black/10" />
 
         <div className="absolute bottom-0 left-0 right-0 p-5">
           <div className="line-clamp-3 text-3xl font-extrabold leading-tight">
-            {post?.title ?? "Titlu articol (placeholder)"}
+            {post.title}
           </div>
 
           <div className="mt-3 text-[11px] font-semibold uppercase text-white/75">
-            {post?.author ? `De ${post.author}` : "De redacție"}
+            {post.author ? `De ${post.author}` : "De redacție"}
             <span className="mx-2">•</span>
-            {post?.dateLabel ?? "recent"}
+            {post.dateLabel ?? "recent"}
           </div>
         </div>
       </div>
@@ -203,11 +206,11 @@ function HeroCard({ post }: { post?: Post }) {
   );
 }
 
-function SmallCard({ post }: { post?: Post }) {
+function SmallCard({ post }: { post: Post }) {
   return (
     <Link href={hrefFor(post)} className="group block">
       <div className="relative h-[138px] overflow-hidden bg-white/10">
-        {post?.image ? (
+        {post.image ? (
           <Image
             src={post.image}
             alt={post.title}
@@ -223,10 +226,10 @@ function SmallCard({ post }: { post?: Post }) {
 
         <div className="absolute bottom-0 left-0 right-0 p-4">
           <div className="line-clamp-2 text-[15px] font-extrabold leading-snug">
-            {post?.title ?? "Titlu articol (placeholder)"}
+            {post.title}
           </div>
           <div className="mt-2 text-[10px] font-semibold uppercase text-white/75">
-            {post?.dateLabel ?? "recent"}
+            {post.dateLabel ?? "recent"}
           </div>
         </div>
       </div>
@@ -234,11 +237,11 @@ function SmallCard({ post }: { post?: Post }) {
   );
 }
 
-function MiniCard({ post }: { post?: Post }) {
+function MiniCard({ post }: { post: Post }) {
   return (
     <Link href={hrefFor(post)} className="group block">
       <div className="relative h-[140px] overflow-hidden bg-white/10">
-        {post?.image ? (
+        {post.image ? (
           <Image
             src={post.image}
             alt={post.title}
@@ -255,21 +258,21 @@ function MiniCard({ post }: { post?: Post }) {
 
       <div className="mt-3">
         <div className="line-clamp-2 text-[13px] font-extrabold leading-snug">
-          {post?.title ?? "Titlu articol (placeholder)"}
+          {post.title}
         </div>
         <div className="mt-2 text-[10px] font-semibold uppercase text-white/70">
-          {post?.dateLabel ?? "recent"}
+          {post.dateLabel ?? "recent"}
         </div>
       </div>
     </Link>
   );
 }
 
-function ListItem({ post }: { post?: Post }) {
+function ListItem({ post }: { post: Post }) {
   return (
     <Link href={hrefFor(post)} className="group flex gap-3">
       <div className="relative h-[56px] w-[92px] flex-none overflow-hidden bg-white/10">
-        {post?.image ? (
+        {post.image ? (
           <Image
             src={post.image}
             alt={post.title}
@@ -280,10 +283,10 @@ function ListItem({ post }: { post?: Post }) {
       </div>
       <div className="min-w-0">
         <div className="line-clamp-2 text-[13px] font-extrabold leading-snug">
-          {post?.title ?? "Titlu articol (placeholder)"}
+          {post.title}
         </div>
         <div className="mt-1 text-[10px] font-semibold uppercase text-white/70">
-          {post?.dateLabel ?? "recent"}
+          {post.dateLabel ?? "recent"}
         </div>
       </div>
     </Link>

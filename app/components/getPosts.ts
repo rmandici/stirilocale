@@ -1,6 +1,6 @@
-import { posts as demoPosts } from "../data/posts";
+"use client";
 
-type NavPost = {
+export type NavPost = {
   slug: string;
   title: string;
   categorySlug: string;
@@ -9,75 +9,74 @@ type NavPost = {
   dateLabel?: string;
 };
 
-function stripHtml(html: string) {
-  return (html || "")
-    .replace(/<[^>]*>/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
+type CacheEntry = {
+  ts: number;
+  items: NavPost[];
+  loading: boolean;
+};
+
+const CACHE = new Map<string, CacheEntry>();
+const TTL = 60_000; // 1 minut
+
+function keyFor(slug: string) {
+  return slug.toLowerCase().trim();
 }
 
-function fmtDate(iso?: string) {
-  try {
-    return iso ? new Date(iso).toLocaleDateString("ro-RO") : "recent";
-  } catch {
-    return "recent";
-  }
-}
+async function fetchNavPosts(
+  categorySlug: string,
+  limit: number
+): Promise<NavPost[]> {
+  const res = await fetch(
+    `/api/nav-posts?category=${encodeURIComponent(
+      categorySlug
+    )}&limit=${limit}`,
+    { cache: "no-store" }
+  );
+  if (!res.ok) return [];
+  const data = (await res.json()) as unknown;
 
-/**
- * Normalizare: lower + fără diacritice + trim
- */
-function norm(s: string) {
-  return (s || "")
-    .toLowerCase()
-    .trim()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-}
+  if (!Array.isArray(data)) return [];
 
-/**
- * Ia slug categoria din orice structură posibilă:
- * - p.categorySlug (dacă există)
- * - p.category.slug (cum ai în WP și în multe demo-uri)
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getCatSlug(p: any): string {
-  return String(p?.categorySlug ?? p?.category?.slug ?? "").trim();
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function toNavPost(p: any): NavPost {
-  return {
-    slug: String(p?.slug ?? ""),
-    title: stripHtml(String(p?.title ?? "")),
-    categorySlug: getCatSlug(p),
-    image: p?.image ? String(p.image) : undefined,
-    author: p?.author ? String(p.author) : "Redacție",
-    dateLabel: fmtDate(p?.publishedAt ?? p?.date ?? p?.createdAt),
-  };
+  return data
+    .map((x) => x as Partial<NavPost>)
+    .filter((x): x is NavPost => Boolean(x.slug && x.title && x.categorySlug))
+    .slice(0, limit);
 }
 
 /**
- * ✅ Funcția folosită în Header
+ * ✅ aceeași semnătură ca înainte
+ * Returnează imediat ce are în cache (poate [] prima dată),
+ * apoi face fetch și notifică UI-ul când vin datele.
  */
 export function getLatestPostsByCategory(
   categorySlug: string,
   limit = 6
 ): NavPost[] {
-  const wanted = norm(categorySlug);
-  if (!wanted) return [];
+  const k = keyFor(categorySlug);
+  if (!k) return [];
 
-  // Debug rapid (opțional): vezi în console dacă intră și ce filtrează
-  // console.log("[getLatestPostsByCategory]", { categorySlug, wanted, total: demoPosts.length });
+  const now = Date.now();
+  const cached = CACHE.get(k);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const filtered = (demoPosts as any[])
-    .filter((p) => {
-      const slug = norm(getCatSlug(p));
-      return slug === wanted;
+  // dacă cache e proaspăt
+  if (cached && now - cached.ts < TTL && cached.items.length)
+    return cached.items;
+
+  // dacă deja încarcă, returnăm ce avem
+  if (cached?.loading) return cached.items;
+
+  // inițiem încărcarea
+  CACHE.set(k, { ts: now, items: cached?.items ?? [], loading: true });
+
+  fetchNavPosts(k, limit)
+    .then((items) => {
+      CACHE.set(k, { ts: Date.now(), items, loading: false });
+      window.dispatchEvent(new Event("navposts:update"));
     })
-    .map(toNavPost)
-    .filter((p) => p.slug && p.title);
+    .catch(() => {
+      CACHE.set(k, { ts: Date.now(), items: [], loading: false });
+      window.dispatchEvent(new Event("navposts:update"));
+    });
 
-  return filtered.slice(0, limit);
+  return cached?.items ?? [];
 }
