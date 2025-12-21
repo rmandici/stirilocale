@@ -39,7 +39,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
         {/* banner overlay (nu împinge nimic) */}
 
-        <MarketTicker />
+        {/* <MarketTicker /> */}
         <div className="bg-white text-gray-900 dark:bg-black/95 dark:text-white">
           {children}
         </div>

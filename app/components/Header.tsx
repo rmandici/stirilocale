@@ -289,7 +289,14 @@ export function Header() {
 
               <div className="flex items-center gap-3 text-[20px] font-extrabold">
                 <SocialIcon>
-                  <IconFacebook className="h-4 w-4" />
+                  <a
+                    href="https://www.facebook.com/people/Callatis-Press/61563413554461/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Facebook Callatis Press"
+                  >
+                    <IconFacebook className="h-4 w-4" />
+                  </a>
                 </SocialIcon>
                 <SocialIcon>
                   <IconInstagram className="h-5 w-5" />

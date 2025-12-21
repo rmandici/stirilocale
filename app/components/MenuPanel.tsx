@@ -239,7 +239,14 @@ export function MenuPanel({
               </div>
 
               <div className="mt-4 flex justify-center gap-3">
-                <SocialIcon>f</SocialIcon>
+                <a
+                  href="https://www.facebook.com/people/Callatis-Press/61563413554461/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Facebook Callatis Press"
+                >
+                  <SocialIcon>f</SocialIcon>
+                </a>
                 <SocialIcon>ig</SocialIcon>
                 <SocialIcon>x</SocialIcon>
                 <SocialIcon>yt</SocialIcon>

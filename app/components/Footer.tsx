@@ -76,7 +76,7 @@ function IconTikTok(props: React.SVGProps<SVGSVGElement>) {
 export function Footer() {
   // ✅ completează cu linkurile tale reale
   const socials = {
-    facebook: "https://www.facebook.com/callatispress", // <-- schimbă
+    facebook: "https://www.facebook.com/people/Callatis-Press/61563413554461/", // <-- schimbă
     instagram: "https://www.instagram.com/", // <-- schimbă
     x: "https://x.com/", // <-- schimbă
     youtube: "https://www.youtube.com/", // <-- schimbă
