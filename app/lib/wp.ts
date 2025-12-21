@@ -231,6 +231,10 @@ export async function getWpPostBySlug(slug: string): Promise<WpPostResult> {
       2
     );
 
+    console.log("WP fetch url =", url);
+    console.log("WP status =", res.status);
+    console.log("WP content-type =", res.headers.get("content-type"));
+
     if (!res.ok) {
       // 404 real de la WP -> not_found; altfel error
       if (res.status === 404) return { kind: "not_found" };
@@ -241,8 +245,23 @@ export async function getWpPostBySlug(slug: string): Promise<WpPostResult> {
       return { kind: "error", status: res.status, message: "WP non-JSON" };
     }
 
-    const arr: WPPost[] = await res.json();
-    if (!arr.length) return { kind: "not_found" };
+    const text = await res.text();
+    console.log("WP status =", res.status);
+    console.log("WP content-type =", res.headers.get("content-type"));
+    console.log("WP body (first 200) =", text.slice(0, 200));
+
+    let arr: WPPost[];
+    try {
+      arr = JSON.parse(text) as WPPost[];
+    } catch {
+      return {
+        kind: "error",
+        status: res.status,
+        message: "WP JSON parse failed",
+      };
+    }
+
+    if (!Array.isArray(arr) || !arr.length) return { kind: "not_found" };
 
     const p = arr[0];
     const content = p.content?.rendered ?? "";

@@ -1,5 +1,5 @@
-// ✅ METADATA DE TEST: fără WP, fără fetch, fără nimic dinamic
+import type { ReactNode } from "react";
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+export default function StireLayout({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }

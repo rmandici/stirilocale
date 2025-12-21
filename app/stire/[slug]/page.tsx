@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -21,101 +22,21 @@ type Props = {
   params: { slug: string };
 };
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const site = siteBase();
-  const { slug } = params;
+function stripHtmlToText(html?: string) {
+  if (!html) return "";
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
-  const r = await getWpPostBySlug(slug);
-  const canonical = new URL(`/stire/${slug}`, site).toString();
-  const fallbackOg = new URL("/og-home.jpg", site).toString();
-
-  // Dacă WP spune clar "nu există"
-  if (r.kind === "not_found") {
-    return {
-      metadataBase: new URL(site),
-      title: "Callatis Press",
-      description:
-        "Știri din România: actualitate, local, politică, sport, ultimă oră.",
-      alternates: { canonical },
-      openGraph: {
-        type: "website",
-        url: canonical,
-        title: "Callatis Press",
-        description:
-          "Știri din România: actualitate, local, politică, sport, ultimă oră.",
-        images: [{ url: fallbackOg, width: 1200, height: 630 }],
-      },
-      twitter: {
-        card: "summary_large_image",
-        title: "Callatis Press",
-        description:
-          "Știri din România: actualitate, local, politică, sport, ultimă oră.",
-        images: [fallbackOg],
-      },
-    };
-  }
-
-  // Dacă WP are o eroare tranzitorie (timeout / 5xx / non-json etc.)
-  // IMPORTANT: nu returnăm {} (Facebook rămâne cu meta ciudată)
-  if (r.kind === "error") {
-    return {
-      metadataBase: new URL(site),
-      title: "Callatis Press",
-      description:
-        "Știri din România: actualitate, local, politică, sport, ultimă oră.",
-      alternates: { canonical },
-      openGraph: {
-        type: "website",
-        url: canonical,
-        title: "Callatis Press",
-        description:
-          "Știri din România: actualitate, local, politică, sport, ultimă oră.",
-        images: [{ url: fallbackOg, width: 1200, height: 630 }],
-      },
-      twitter: {
-        card: "summary_large_image",
-        title: "Callatis Press",
-        description:
-          "Știri din România: actualitate, local, politică, sport, ultimă oră.",
-        images: [fallbackOg],
-      },
-    };
-  }
-
-  // OK
-  const post = r.post;
-
-  const ogImage = post.image
-    ? post.image.startsWith("http")
-      ? post.image
-      : new URL(post.image, site).toString()
-    : fallbackOg;
-
-  const desc = post.excerpt?.trim() || post.title;
-
-  return {
-    metadataBase: new URL(site),
-    title: post.title,
-    description: desc,
-    alternates: { canonical },
-
-    openGraph: {
-      type: "article",
-      url: canonical,
-      title: post.title,
-      description: desc,
-      siteName: "Callatis Press",
-      locale: "ro_RO",
-      images: [{ url: ogImage, width: 1200, height: 630 }],
-    },
-
-    twitter: {
-      card: "summary_large_image",
-      title: post.title,
-      description: desc,
-      images: [ogImage],
-    },
-  };
+function buildDesc(post: { title: string; content?: string }) {
+  const txt = stripHtmlToText(post.content);
+  // Facebook afișează bine 150–200 caractere
+  const short = txt.slice(0, 180).trim();
+  return short || post.title;
 }
 
 function fmtDate(iso: string) {
@@ -145,18 +66,130 @@ function removeFirstDuplicateFeaturedImage(html: string, featuredUrl?: string) {
 
   return html.replace(re, "");
 }
-
-export default async function StirePage({
-  params,
-}: {
+type PageProps = {
   params: Promise<{ slug: string }>;
-}) {
-  const { slug } = await params;
+};
+
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { slug } = await params; // <-- IMPORTANT
+  const site = siteBase();
+
+  if (!slug) return { title: "Callatis Press" };
+
+  const canonical = new URL(`/stire/${slug}`, site).toString();
+  const fallbackOg = new URL("/og-home.jpg", site).toString();
+
+  let r: any;
+  try {
+    r = await getWpPostBySlug(slug);
+  } catch (e: any) {
+    r = { kind: "error", message: e?.message ?? "WP fetch failed" };
+  }
+
+  // Dacă WP zice “not found”, nu indexăm și dăm meta coerentă (dar fără “undefined”).
+  if (r.kind === "not_found") {
+    const title = "Callatis Press";
+    const description =
+      "Știri din România: actualitate, local, politică, sport, ultimă oră.";
+
+    return {
+      metadataBase: new URL(site),
+      title,
+      description,
+      alternates: { canonical },
+      robots: { index: false, follow: false },
+      openGraph: {
+        type: "website",
+        url: canonical,
+        title,
+        description,
+        images: [{ url: fallbackOg, width: 1200, height: 630 }],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
+        images: [fallbackOg],
+      },
+    };
+  }
+
+  // Dacă WP are eroare tranzitorie, nu vrem 404 și nu vrem metadata goală.
+  if (r.kind === "error") {
+    const title = "Callatis Press";
+    const description =
+      "Știri din România: actualitate, local, politică, sport, ultimă oră.";
+
+    return {
+      metadataBase: new URL(site),
+      title,
+      description,
+      alternates: { canonical },
+      openGraph: {
+        type: "website",
+        url: canonical,
+        title,
+        description,
+        images: [{ url: fallbackOg, width: 1200, height: 630 }],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
+        images: [fallbackOg],
+      },
+    };
+  }
+
+  // OK
+  const post = r.post;
+
+  const ogImage = post?.image
+    ? String(post.image).startsWith("http")
+      ? String(post.image)
+      : new URL(String(post.image), site).toString()
+    : fallbackOg;
+
+  const title = post?.title ? String(post.title) : "Callatis Press";
+  const description = buildDesc({
+    title,
+    content: post?.content ? String(post.content) : undefined,
+  });
+
+  return {
+    metadataBase: new URL(site),
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      type: "article",
+      url: canonical,
+      title,
+      description,
+      siteName: "Callatis Press",
+      locale: "ro_RO",
+      images: [{ url: ogImage, width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImage],
+    },
+  };
+}
+
+export default async function StirePage({ params }: PageProps) {
+  const { slug } = await params; // <-- IMPORTANT
 
   const r = await getWpPostBySlug(slug);
 
   // Demo fallback (din data/posts)
   const demoPost = demoPosts.find((p) => p.slug === slug) ?? null;
+  console.log("StirePage slug =", slug, "WP result kind =", r.kind);
+  if (r.kind !== "ok") console.log("WP result =", r);
 
   // Dacă WP zice "not found"
   if (r.kind === "not_found") {
@@ -175,6 +208,8 @@ export default async function StirePage({
 
   const wpPost = r.kind === "ok" ? r.post : null;
   const post = wpPost ?? demoPost;
+  console.log("StirePage slug =", slug, "WP result kind =", r.kind);
+  if (r.kind !== "ok") console.log("WP result =", r);
 
   if (!post) return notFound();
 
@@ -196,12 +231,6 @@ export default async function StirePage({
           )
           .sort((a, b) => (b.views ?? 0) - (a.views ?? 0))
       : popularPool.filter((p) => p.slug !== post.slug);
-
-  const gallery = (!isWP && post.images?.length ? post.images : [])
-    .filter(Boolean)
-    .slice(0, 5);
-
-  void gallery; // dacă nu folosești gallery încă, evită warning; poți șterge linia când îl folosești
 
   const contentHtml = isWP
     ? removeFirstDuplicateFeaturedImage(post.content ?? "", post.image)
