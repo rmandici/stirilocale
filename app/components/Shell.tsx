@@ -2,11 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { Header } from "./Header";
-import { MarketTicker } from "./MarketTicker";
+// import { MarketTicker } from "./MarketTicker";
 import { Footer } from "./Footer";
 import { ThemeProvider } from "./theme-provider";
 
-export function Shell({ children }: { children: React.ReactNode }) {
+type Category = { id?: number | string; slug: string; name: string };
+
+export function Shell({
+  children,
+  categories,
+}: {
+  children: React.ReactNode;
+  categories: Category[];
+}) {
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
@@ -35,11 +43,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <ThemeProvider>
-        <Header />
+        <Header collapsed={collapsed} categories={categories} />
 
-        {/* banner overlay (nu împinge nimic) */}
-
-        {/* <MarketTicker /> */}
         <div className="bg-white text-gray-900 dark:bg-black/95 dark:text-white">
           {children}
         </div>

@@ -13,7 +13,6 @@ export type Post = {
   excerpt: string;
   content: string;
   category: Category;
-  author: string;
   publishedAt: string;
   image: string;
   images: string[];
@@ -45,8 +44,6 @@ const titleSeeds = [
   "Exemplu de conținut editorial",
   "Actualizare: informații noi",
 ];
-
-const authors = ["Redacția", "Editor", "Reporter", "Admin", "Echipa Demo"];
 
 const images = [
   "https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=1600&q=60",
@@ -107,7 +104,6 @@ export const posts: Post[] = Array.from({ length: 50 }).map((_, i) => {
     content,
     hasVideo: detectHasVideo(content),
     category: cat,
-    author: pick(authors),
     publishedAt: date.toISOString(),
     image: images[i % images.length],
     images: [

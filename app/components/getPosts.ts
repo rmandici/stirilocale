@@ -5,7 +5,6 @@ export type NavPost = {
   title: string;
   categorySlug: string;
   image?: string;
-  author?: string;
   dateLabel?: string;
 };
 

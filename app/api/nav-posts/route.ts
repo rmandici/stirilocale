@@ -10,7 +10,6 @@ type WPPost = {
   date: string;
   title: WPRendered;
   _embedded?: {
-    author?: Array<{ name?: string }>;
     "wp:featuredmedia"?: Array<{ source_url?: string }>;
     "wp:term"?: Array<
       Array<{ taxonomy?: string; slug?: string; name?: string }>
@@ -20,6 +19,13 @@ type WPPost = {
 
 type WPCategory = { id: number; slug: string; name: string };
 
+/*************  ✨ Windsurf Command ⭐  *************/
+/**
+ * Strip HTML tags from a string, trim whitespace and return the result.
+ * @param {string} html The string to strip HTML from.
+ * @returns {string} The string with HTML stripped.
+ */
+/*******  4040caed-d9af-4c7a-b94d-495293d9d8b0  *******/
 function stripHtml(html: string) {
   return (html || "")
     .replace(/<[^>]*>/g, "")
@@ -82,13 +88,12 @@ export async function GET(req: Request) {
 
     const out = wpPosts.map((p) => {
       const image = p._embedded?.["wp:featuredmedia"]?.[0]?.source_url || "";
-      const author = p._embedded?.author?.[0]?.name || "Redacție";
+
       return {
         slug: p.slug,
         title: stripHtml(p.title?.rendered || ""),
         categorySlug,
         image: image || undefined,
-        author,
         dateLabel: fmtDate(p.date),
       };
     });

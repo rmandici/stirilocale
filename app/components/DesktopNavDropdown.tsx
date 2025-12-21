@@ -8,7 +8,6 @@ type Post = {
   title: string;
   categorySlug: string;
   image?: string;
-  author?: string;
   dateLabel?: string;
 };
 
@@ -196,12 +195,6 @@ function HeroCard({ post }: { post: Post }) {
         <div className="absolute bottom-0 left-0 right-0 p-5">
           <div className="line-clamp-3 text-3xl font-extrabold leading-tight">
             {post.title}
-          </div>
-
-          <div className="mt-3 text-[11px] font-semibold uppercase text-white/75">
-            {post.author ? `De ${post.author}` : "De redacție"}
-            <span className="mx-2">•</span>
-            {post.dateLabel ?? "recent"}
           </div>
         </div>
       </div>

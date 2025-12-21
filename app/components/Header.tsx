@@ -123,36 +123,20 @@ function useDebounced<T>(value: T, delayMs = 250) {
 
 type NavCategory = { slug: string; name: string };
 
-export function Header() {
+type HeaderProps = {
+  collapsed?: boolean;
+  categories?: NavCategory[];
+};
+
+export function Header({ collapsed, categories }: HeaderProps) {
+  void collapsed; // dacă nu-l folosești încă, evită warning
+
   const [navCategories, setNavCategories] = useState<NavCategory[]>(
-    demoCategories.map((c) => ({ slug: c.slug, name: c.name }))
+    categories && categories.length
+      ? categories
+      : demoCategories.map((c) => ({ slug: c.slug, name: c.name }))
   );
 
-  useEffect(() => {
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const res = await fetch("/api/categories", { cache: "no-store" });
-        if (!res.ok) return;
-
-        const data = (await res.json()) as NavCategory[];
-        if (!cancelled && Array.isArray(data) && data.length) {
-          // extra-sigur: scoate uncategorized și aici
-          const cleaned = data.filter(
-            (c) => c?.slug && c.slug.toLowerCase() !== "uncategorized"
-          );
-          if (cleaned.length) setNavCategories(cleaned);
-        }
-      } catch {
-        // rămâne fallback-ul demo
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
   const [menuOpen, setMenuOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<"menu" | "search">("menu");
   const [desktopSearchOpen, setDesktopSearchOpen] = useState(false);
@@ -451,7 +435,6 @@ export function Header() {
                           title: p.title ?? "Titlu articol (placeholder)",
                           categorySlug: hoverCat.slug,
                           image: p.image ?? p.cover ?? p.thumbnail,
-                          author: p.author ?? "Redacție",
                           dateLabel: p.dateLabel ?? p.timeAgo ?? "recent",
                         })
                       )}

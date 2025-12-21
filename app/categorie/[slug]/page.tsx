@@ -12,8 +12,6 @@ import { getWpPosts } from "../../lib/wp";
 
 export const dynamic = "force-dynamic"; // temporar: evită caching ciudat pe edge
 
-const WP_BASE = process.env.WP_BASE_URL;
-
 function fmtDate(iso: string) {
   try {
     return new Date(iso).toLocaleDateString("ro-RO");
@@ -38,6 +36,7 @@ function isJsonResponse(res: Response) {
 }
 
 async function getWpCategoryBySlug(slug: string): Promise<WPCategory | null> {
+  const WP_BASE = process.env.WP_BASE_URL;
   try {
     if (!WP_BASE) return null;
 
@@ -61,12 +60,12 @@ async function getWpCategoryBySlug(slug: string): Promise<WPCategory | null> {
   }
 }
 
-export default async function CategoryPage({
-  params,
-}: {
-  params: { slug: string };
-}) {
-  const slug = params?.slug;
+type PageProps = {
+  params: Promise<{ slug: string }>;
+};
+
+export default async function CategoryPage({ params }: PageProps) {
+  const { slug } = await params;
 
   if (!slug) return notFound();
 
@@ -137,11 +136,6 @@ export default async function CategoryPage({
                       {catFeatured.excerpt}
                     </p>
                   ) : null}
-
-                  <div className="mt-5 text-xs text-gray-500 dark:text-white/50">
-                    {catFeatured.author ? `By ${catFeatured.author} · ` : ""}
-                    {fmtDate(catFeatured.publishedAt)}
-                  </div>
                 </div>
 
                 <div className="md:col-span-7">
@@ -178,11 +172,6 @@ export default async function CategoryPage({
                     >
                       {p.title}
                     </Link>
-
-                    <div className="mt-2 text-xs text-gray-500 dark:text-white/50">
-                      {p.author ? `By ${p.author} · ` : ""}
-                      {fmtDate(p.publishedAt)}
-                    </div>
                   </article>
                 ))}
               </div>

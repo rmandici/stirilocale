@@ -12,7 +12,6 @@ export type Post = {
   excerpt: string;
   content: string;
   category: Category;
-  author: string;
   publishedAt: string;
   image: string;
   images: string[];
@@ -83,10 +82,6 @@ function firstCategoryFromEmbedded(p: WPPost): Category {
 function featuredImageFromEmbedded(p: WPPost) {
   const media = p._embedded?.["wp:featuredmedia"]?.[0];
   return media?.source_url ?? "";
-}
-
-function authorNameFromEmbedded(p: WPPost) {
-  return p._embedded?.author?.[0]?.name ?? "Admin";
 }
 
 function wpHeaders() {
@@ -180,7 +175,6 @@ export async function getWpPosts(opts?: {
         content,
         hasVideo: detectHasVideo(content),
         category,
-        author: authorNameFromEmbedded(p),
         publishedAt: p.date,
         image,
         images: image ? [image] : [],
@@ -276,7 +270,6 @@ export async function getWpPostBySlug(slug: string): Promise<WpPostResult> {
       content,
       hasVideo: detectHasVideo(content),
       category,
-      author: authorNameFromEmbedded(p),
       publishedAt: p.date,
       image,
       images: image ? [image] : [],

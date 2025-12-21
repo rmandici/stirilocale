@@ -67,11 +67,6 @@ export function CategoryRemaining({
                   {p.excerpt}
                 </p>
               ) : null}
-
-              <div className="mt-4 text-xs text-gray-500 dark:text-white/50">
-                {p.author ? `By ${p.author} · ` : ""}
-                {fmtDate(p.publishedAt)}
-              </div>
             </div>
           </article>
         ))}

@@ -216,11 +216,6 @@ function BigCard({ p, tall }: { p: Post; tall?: boolean }) {
 
         {/* meta row + share (dreapta jos) */}
         <div className="mt-3 flex items-center justify-between gap-3">
-          <div className="min-w-0 truncate text-xs text-gray-500 dark:text-white/50">
-            {p.author ? `${p.author} • ` : ""}
-            {new Date(p.publishedAt).toLocaleDateString("ro-RO")}
-          </div>
-
           <ShareBar
             url={`${process.env.NEXT_PUBLIC_SITE_URL}/stire/${p.slug}`}
             title={p.title}
@@ -362,10 +357,6 @@ export default async function Home() {
                       </Link>
 
                       <div className="mt-3 flex items-center justify-between gap-3">
-                        <div className="min-w-0 truncate text-[12px] font-normal tracking-wide text-gray-500 dark:text-white/50">
-                          BY {p.author} ·{" "}
-                          {new Date(p.publishedAt).toLocaleDateString("ro-RO")}
-                        </div>
                         <ShareBar
                           url={`${process.env.NEXT_PUBLIC_SITE_URL}/stire/${p.slug}`}
                           title={p.title}
@@ -397,10 +388,6 @@ export default async function Home() {
                     />
                     <div className="mt-1 text-[18px] md:text-[19px] font-extrabold leading-snug">
                       <span className="u-underline">{p.title}</span>
-                    </div>
-                    <div className="mt-2 text-xs font-normal text-gray-400">
-                      BY {p.author} ·{" "}
-                      {new Date(p.publishedAt).toLocaleDateString("ro-RO")}
                     </div>
                   </div>
                 </Link>
@@ -551,9 +538,6 @@ export default async function Home() {
 
                             {/* Footer lipit jos */}
                             <div className="mt-auto pt-2 flex items-center justify-between gap-3">
-                              <div className="text-xs text-white/60">
-                                {p.author}
-                              </div>
                               <ShareBar
                                 url={`${process.env.NEXT_PUBLIC_SITE_URL}/stire/${p.slug}`}
                                 title={p.title}
@@ -592,9 +576,6 @@ export default async function Home() {
 
                         {/* Footer lipit jos */}
                         <div className="pt-3 flex justify-between">
-                          <div className="text-xs text-white/60">
-                            BY {p.author}
-                          </div>
                           <ShareBar
                             url={`${process.env.NEXT_PUBLIC_SITE_URL}/stire/${p.slug}`}
                             title={p.title}

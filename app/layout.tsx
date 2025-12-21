@@ -2,6 +2,7 @@ import "./globals.css";
 import { Shell } from "./components/Shell";
 import type { Metadata } from "next";
 import { Inter, Newsreader } from "next/font/google";
+import ServerShell from "./components/ServerShell";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const newsreader = Newsreader({ subsets: ["latin"], variable: "--font-serif" });
@@ -30,7 +31,7 @@ export default function RootLayout({
   return (
     <html lang="ro" suppressHydrationWarning>
       <body className={`${inter.variable} ${newsreader.variable}`}>
-        <Shell>{children}</Shell>
+        <ServerShell>{children}</ServerShell>
       </body>
     </html>
   );

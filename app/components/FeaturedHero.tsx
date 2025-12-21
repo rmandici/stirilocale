@@ -110,11 +110,6 @@ export function FeaturedHero({ post }: { post: Post }) {
 
             {/* meta + share */}
             <div className="mt-4 flex items-center justify-between gap-3 text-xs text-gray-400 dark:text-white/50">
-              <div className="min-w-0 truncate">
-                BY {post.author ? `${post.author} • ` : ""}
-                {fmtDate(post.publishedAt)}
-              </div>
-
               <ShareBar
                 path={`/stire/${post.slug}`}
                 title={post.title}
@@ -132,11 +127,6 @@ export function FeaturedHero({ post }: { post: Post }) {
             </h2>
 
             <div className="mt-3 flex items-center justify-between gap-3 text-[12px] font-normal tracking-wide text-gray-500 dark:text-white/50">
-              <div className="min-w-0 truncate">
-                {post.author ? `BY ${post.author} · ` : ""}
-                {fmtDate(post.publishedAt)}
-              </div>
-
               <ShareBar
                 path={`/stire/${post.slug}`}
                 title={post.title}

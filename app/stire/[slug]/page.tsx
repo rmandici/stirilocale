@@ -254,11 +254,6 @@ export default async function StirePage({ params }: PageProps) {
               {post.title}
             </h1>
 
-            <div className="mt-4 text-sm text-gray-500 dark:text-white/50">
-              {post.author ? `By ${post.author} · ` : ""}
-              {fmtDate(post.publishedAt)}
-            </div>
-
             {post.image ? (
               <img
                 src={post.image}

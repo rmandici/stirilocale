@@ -94,11 +94,6 @@ export function StoryCard({ post }: { post: Post }) {
 
           {/* meta row + share jos dreapta */}
           <div className="mt-3 flex items-center justify-between gap-3 text-xs text-gray-500 dark:text-white/50">
-            <div className="min-w-0 truncate">
-              {post.author ? `${post.author} • ` : ""}
-              {fmtDate(post.publishedAt)}
-            </div>
-
             <ShareBar
               url={`${process.env.NEXT_PUBLIC_SITE_URL}/stire/${post.slug}`}
               title={post.title}
