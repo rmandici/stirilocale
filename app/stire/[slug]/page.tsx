@@ -9,7 +9,7 @@ import { posts as demoPosts } from "../../data/posts";
 import { getWpPostBySlug, getWpPosts } from "../../lib/wp";
 
 // Temporar, ca să nu existe caching negativ / flapping între edge nodes
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 function siteBase() {
   const s =
@@ -199,12 +199,22 @@ export default async function StirePage({ params }: PageProps) {
 
   // Dacă WP are eroare -> NU 404 (Facebook cache-uiește 404 ca “mort”)
   if (r.kind === "error") {
-    if (!demoPost) {
-      // mai corect e 500 decât 404
-      throw new Error(`WP error for slug=${slug}: ${r.message}`);
-    }
-    // continuăm cu demo
+  if (!demoPost) {
+    // nu 404, nu crash; afișăm un fallback safe
+    return (
+      <main className="bg-white text-gray-900 dark:bg-[#0b131a] dark:text-white">
+        <div className="mx-auto max-w-3xl px-4 py-16">
+          <h1 className="text-2xl font-extrabold">Momentan indisponibil</h1>
+          <p className="mt-4 text-gray-600 dark:text-white/70">
+            Serverul de conținut răspunde greu. Te rugăm să reîncerci în câteva secunde.
+          </p>
+        </div>
+      </main>
+    );
   }
+  // altfel continuăm cu demo
+}
+
 
   const wpPost = r.kind === "ok" ? r.post : null;
   const post = wpPost ?? demoPost;

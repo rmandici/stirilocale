@@ -32,6 +32,15 @@ export const metadata: Metadata = {
   },
 };
 
+export const revalidate = 60;
+
+function siteBase() {
+  const s =
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
+  return s || "http://localhost:3000";
+}
+
 function cn(...a: (string | false | undefined)[]) {
   return a.filter(Boolean).join(" ");
 }
@@ -217,7 +226,7 @@ function BigCard({ p, tall }: { p: Post; tall?: boolean }) {
         {/* meta row + share (dreapta jos) */}
         <div className="mt-3 flex items-center justify-between gap-3">
           <ShareBar
-            url={`${process.env.NEXT_PUBLIC_SITE_URL}/stire/${p.slug}`}
+            url={`${siteBase()}/stire/${p.slug}`}
             title={p.title}
             className="shrink-0"
           />
@@ -358,7 +367,7 @@ export default async function Home() {
 
                       <div className="mt-3 flex items-center justify-between gap-3">
                         <ShareBar
-                          url={`${process.env.NEXT_PUBLIC_SITE_URL}/stire/${p.slug}`}
+                          url={`${siteBase()}/stire/${p.slug}`}
                           title={p.title}
                           className="shrink-0"
                         />
@@ -433,7 +442,7 @@ export default async function Home() {
 
                   <div className="mt-4">
                     <ShareBar
-                      url={`${process.env.NEXT_PUBLIC_SITE_URL}/stire/${politicsFeatured.slug}`}
+                      url={`${siteBase()}/stire/${politicsFeatured.slug}`}
                       title={politicsFeatured.title}
                     />
                   </div>
@@ -539,7 +548,7 @@ export default async function Home() {
                             {/* Footer lipit jos */}
                             <div className="mt-auto pt-2 flex items-center justify-between gap-3">
                               <ShareBar
-                                url={`${process.env.NEXT_PUBLIC_SITE_URL}/stire/${p.slug}`}
+                                url={`${siteBase()}/stire/${p.slug}`}
                                 title={p.title}
                               />
                             </div>
@@ -577,7 +586,7 @@ export default async function Home() {
                         {/* Footer lipit jos */}
                         <div className="pt-3 flex justify-between">
                           <ShareBar
-                            url={`${process.env.NEXT_PUBLIC_SITE_URL}/stire/${p.slug}`}
+                            url={`${siteBase()}/stire/${p.slug}`}
                             title={p.title}
                           />
                         </div>

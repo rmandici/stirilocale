@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const WP_BASE = process.env.WP_BASE_URL;
+// const WP_BASE = process.env.WP_BASE_URL;
 
 type WPRendered = { rendered: string };
 
@@ -49,12 +49,13 @@ function wpHeaders() {
   };
 }
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+
+export const revalidate = 60;
 
 export async function GET(req: Request) {
   try {
-    if (!WP_BASE) return NextResponse.json([]);
+    const WP_BASE = process.env.WP_BASE_URL;
+if (!WP_BASE) return NextResponse.json([]);
 
     const { searchParams } = new URL(req.url);
     const categorySlug = (searchParams.get("category") || "").trim();
@@ -67,7 +68,8 @@ export async function GET(req: Request) {
       `${WP_BASE}/wp-json/wp/v2/categories?slug=${encodeURIComponent(
         categorySlug
       )}`,
-      { headers: wpHeaders(), cache: "no-store" }
+      { headers: wpHeaders(), next: { revalidate: 300 } } // categoria se schimbă rar
+
     );
 
     if (!catRes.ok) return NextResponse.json([]);
@@ -99,8 +101,8 @@ export async function GET(req: Request) {
     });
 
     return NextResponse.json(out, {
-      headers: { "cache-control": "no-store, max-age=0" },
-    });
+  headers: { "cache-control": "public, s-maxage=60, stale-while-revalidate=300" },
+});
   } catch {
     return NextResponse.json([]);
   }

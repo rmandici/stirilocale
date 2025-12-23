@@ -10,15 +10,7 @@ import { CategoryRemaining } from "../../components/CategoryRemaining";
 
 import { getWpPosts } from "../../lib/wp";
 
-export const dynamic = "force-dynamic"; // temporar: evită caching ciudat pe edge
-
-function fmtDate(iso: string) {
-  try {
-    return new Date(iso).toLocaleDateString("ro-RO");
-  } catch {
-    return "";
-  }
-}
+export const revalidate = 60; // cache stabil pt listări
 
 type WPCategory = { id: number; slug: string; name: string };
 
@@ -41,14 +33,15 @@ async function getWpCategoryBySlug(slug: string): Promise<WPCategory | null> {
     if (!WP_BASE) return null;
 
     const res = await fetch(
-      `${WP_BASE}/wp-json/wp/v2/categories?slug=${encodeURIComponent(
-        slug
-      )}&per_page=1`,
-      {
-        cache: "no-store", // temporar: ca să nu prinzi rezultate vechi / incomplete
-        headers: wpHeaders(),
-      }
-    );
+  `${WP_BASE}/wp-json/wp/v2/categories?slug=${encodeURIComponent(
+    slug
+  )}&per_page=1`,
+  {
+    next: { revalidate: 300 }, // categorie se schimbă rar
+    headers: wpHeaders(),
+  }
+);
+
 
     if (!res.ok) return null;
     if (!isJsonResponse(res)) return null;

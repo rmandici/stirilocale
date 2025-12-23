@@ -3,8 +3,7 @@ import type { Post } from "../../lib/wp";
 import { getWpPosts } from "../../lib/wp";
 import { posts as demoPosts } from "../../data/posts";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 60;
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -28,8 +27,10 @@ export async function GET(req: Request) {
   }));
 
   return NextResponse.json(out, {
-    headers: {
-      "cache-control": "no-store, max-age=0",
-    },
-  });
+  headers: {
+    // cache pe CDN + stale-while-revalidate = stabil la refresh
+    "cache-control": "public, s-maxage=60, stale-while-revalidate=300",
+  },
+});
+
 }

@@ -21,7 +21,8 @@ export type Post = {
   hasVideo?: boolean;
 };
 
-const WP_BASE = process.env.WP_BASE_URL;
+// NOTE: nu ținem WP_BASE global (evită valori "stale" la HMR / serverless)
+
 
 type WPRendered = { rendered: string };
 
@@ -98,11 +99,15 @@ function isJsonResponse(res: Response) {
   return ct.includes("application/json");
 }
 
-export async function getWpCategories(): Promise<Map<number, Category>> {
-  try {
-    if (!WP_BASE) return new Map();
 
-    const url = `${WP_BASE}/wp-json/wp/v2/categories?per_page=100`;
+
+export async function getWpCategories(): Promise<Map<number, Category>> {
+  
+  try {
+    const WP_BASE = process.env.WP_BASE_URL;
+if (!WP_BASE) return new Map();
+
+const url = `${WP_BASE}/wp-json/wp/v2/categories?per_page=100`;
     const res = await fetch(url, {
       next: { revalidate: 300 },
       headers: wpHeaders(),
@@ -125,7 +130,8 @@ export async function getWpPosts(opts?: {
   categorySlug?: string;
 }) {
   try {
-    if (!WP_BASE) return [];
+    const WP_BASE = process.env.WP_BASE_URL;
+if (!WP_BASE) return [];
 
     const perPage = opts?.perPage ?? 20;
 
@@ -151,7 +157,7 @@ export async function getWpPosts(opts?: {
 
     const url = `${WP_BASE}/wp-json/wp/v2/posts?${qs.toString()}`;
     const res = await fetch(url, {
-      next: { revalidate: 60 },
+      next: { revalidate: 120 },
       headers: wpHeaders(),
     });
     if (!res.ok) return [];
@@ -209,29 +215,28 @@ async function fetchJsonWithRetry(url: string, init: RequestInit, tries = 2) {
 
 export async function getWpPostBySlug(slug: string): Promise<WpPostResult> {
   try {
+    const WP_BASE = process.env.WP_BASE_URL; // <-- citește fresh (evită HMR stale)
     if (!WP_BASE) return { kind: "error", message: "WP_BASE_URL missing" };
 
     const url = `${WP_BASE}/wp-json/wp/v2/posts?slug=${encodeURIComponent(
       slug
     )}&_embed=1`;
 
-    // IMPORTANT: evităm cache negativ / flapping între edge nodes
+    // IMPORTANT: reducem spam-ul de requesturi la refresh
+    // Revalidate mic = nu lovești WP la fiecare refresh, dar rămâne suficient de fresh.
     const res = await fetchJsonWithRetry(
       url,
       {
-        cache: "no-store",
+        next: { revalidate: 30 }, // <- anti-refresh-spam
         headers: wpHeaders(),
       },
       2
     );
 
-    console.log("WP fetch url =", url);
-    console.log("WP status =", res.status);
-    console.log("WP content-type =", res.headers.get("content-type"));
-
     if (!res.ok) {
-      // 404 real de la WP -> not_found; altfel error
-      if (res.status === 404) return { kind: "not_found" };
+      // WP returnează 404 doar pentru endpoint/route, nu pentru “post inexistent”
+      // (pentru post inexistent primești [] cu 200)
+      if (res.status === 404) return { kind: "error", status: 404, message: "WP endpoint 404" };
       return { kind: "error", status: res.status, message: "WP non-OK" };
     }
 
@@ -239,23 +244,8 @@ export async function getWpPostBySlug(slug: string): Promise<WpPostResult> {
       return { kind: "error", status: res.status, message: "WP non-JSON" };
     }
 
-    const text = await res.text();
-    console.log("WP status =", res.status);
-    console.log("WP content-type =", res.headers.get("content-type"));
-    console.log("WP body (first 200) =", text.slice(0, 200));
-
-    let arr: WPPost[];
-    try {
-      arr = JSON.parse(text) as WPPost[];
-    } catch {
-      return {
-        kind: "error",
-        status: res.status,
-        message: "WP JSON parse failed",
-      };
-    }
-
-    if (!Array.isArray(arr) || !arr.length) return { kind: "not_found" };
+    const arr = (await res.json()) as WPPost[];
+    if (!Array.isArray(arr) || arr.length === 0) return { kind: "not_found" };
 
     const p = arr[0];
     const content = p.content?.rendered ?? "";
@@ -286,3 +276,4 @@ export async function getWpPostBySlug(slug: string): Promise<WpPostResult> {
     };
   }
 }
+
