@@ -95,24 +95,28 @@ function featuredImageFromEmbedded(p: WPPost) {
 
   const sizes = media?.media_details?.sizes;
   if (sizes && typeof sizes === "object") {
-    const candidates = Object.values(sizes)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .map((s: any) => s?.source_url)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .filter((u: any) => typeof u === "string");
+    // 1) dacă există full, ia full (cel mai sigur, fără blur)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const full = (sizes as any)?.full?.source_url;
+    if (typeof full === "string" && full.length) return full;
 
-    // Prefer something that isn't tiny; try common "large-ish" first
-    const preferredOrder = ["large", "medium_large", "medium", "full"];
-    for (const key of preferredOrder) {
+    // 2) altfel alege varianta cu lățimea cea mai mare
+    const entries = Object.values(sizes)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const u = (sizes as any)?.[key]?.source_url;
-      if (typeof u === "string" && u.length) return u;
+      .map((s: any) => ({
+        url: typeof s?.source_url === "string" ? s.source_url : "",
+        w: typeof s?.width === "number" ? s.width : 0,
+        h: typeof s?.height === "number" ? s.height : 0,
+      }))
+      .filter((x) => x.url);
+
+    if (entries.length) {
+      entries.sort((a, b) => b.w - a.w);
+      return entries[0].url;
     }
-
-    // Otherwise take first candidate
-    if (candidates.length) return candidates[0];
   }
 
+  // 3) fallback: original/source_url (poate fi -scaled, dar e ok pentru UI)
   return media?.source_url ?? "";
 }
 

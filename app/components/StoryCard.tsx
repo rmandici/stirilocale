@@ -5,14 +5,6 @@ import Link from "next/link";
 import type { Post } from "../lib/wp";
 import { ShareBar } from "./ShareBar";
 
-function fmtDate(iso: string) {
-  try {
-    return new Date(iso).toLocaleDateString("ro-RO");
-  } catch {
-    return "";
-  }
-}
-
 // ✅ culori doar pentru cele 5 categorii
 function categoryColorClass(slug?: string): string | null {
   const s = (slug ?? "").toLowerCase();
