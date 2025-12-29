@@ -99,9 +99,10 @@ function featuredImageFromEmbedded(p: WPPost) {
 
   // 2) fallback pe source_url
   const url = media?.source_url ?? "";
-  // dacă e webp și ai plugin care păstrează originalul, uneori merge să încerci jpg
-  // (opțional, dacă vrei)
-  // if (url.endsWith(".webp")) return url.replace(/\.webp$/i, ".jpg");
+  if (url.toLowerCase().endsWith(".webp")) {
+    // MU-pluginul din WP creează deja fallback .jpg lângă .webp
+    return url.replace(/\.webp$/i, ".jpg");
+  }
   return url;
 }
 
