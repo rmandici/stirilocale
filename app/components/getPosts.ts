@@ -26,10 +26,7 @@ async function fetchNavPosts(
   limit: number
 ): Promise<NavPost[]> {
   const res = await fetch(
-    `/api/nav-posts?category=${encodeURIComponent(
-      categorySlug
-    )}&limit=${limit}`,
-    { cache: "no-store" }
+    `/api/nav-posts?category=${encodeURIComponent(categorySlug)}&limit=${limit}`
   );
   if (!res.ok) return [];
   const data = (await res.json()) as unknown;
@@ -73,7 +70,11 @@ export function getLatestPostsByCategory(
       window.dispatchEvent(new Event("navposts:update"));
     })
     .catch(() => {
-      CACHE.set(k, { ts: Date.now(), items: [], loading: false });
+      CACHE.set(k, {
+        ts: Date.now(),
+        items: cached?.items ?? [],
+        loading: false,
+      });
       window.dispatchEvent(new Event("navposts:update"));
     });
 

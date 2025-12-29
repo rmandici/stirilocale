@@ -21,9 +21,6 @@ export type Post = {
   hasVideo?: boolean;
 };
 
-// NOTE: nu ținem WP_BASE global (evită valori "stale" la HMR / serverless)
-
-
 type WPRendered = { rendered: string };
 
 type WPPost = {
@@ -74,8 +71,9 @@ function firstCategoryFromEmbedded(p: WPPost): Category {
   if (Array.isArray(terms)) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const cats = terms.flat().filter((t: any) => t?.taxonomy === "category");
-    if (cats?.length)
+    if (cats?.length) {
       return { id: cats[0].id, slug: cats[0].slug, name: cats[0].name };
+    }
   }
   return { slug: "general", name: "General" };
 }
@@ -86,7 +84,6 @@ function featuredImageFromEmbedded(p: WPPost) {
 }
 
 function wpHeaders() {
-  // ajută pentru anumite protecții care tratează fetch-ul "fără UA" ca bot
   return {
     accept: "application/json",
     "user-agent":
@@ -99,26 +96,60 @@ function isJsonResponse(res: Response) {
   return ct.includes("application/json");
 }
 
+/**
+ * Fetch cu retry + timeout ca să evităm blocaje / flapping când WP e lent.
+ */
+async function fetchWithRetry(
+  url: string,
+  init: RequestInit,
+  opts?: { tries?: number; timeoutMs?: number }
+) {
+  const tries = opts?.tries ?? 2;
+  const timeoutMs = opts?.timeoutMs ?? 8000;
 
+  let lastErr: unknown;
+
+  for (let i = 0; i < tries; i++) {
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const res = await fetch(url, { ...init, signal: controller.signal });
+      clearTimeout(t);
+      return res;
+    } catch (e) {
+      clearTimeout(t);
+      lastErr = e;
+    }
+  }
+
+  throw lastErr;
+}
 
 export async function getWpCategories(): Promise<Map<number, Category>> {
-  
   try {
     const WP_BASE = process.env.WP_BASE_URL;
-if (!WP_BASE) return new Map();
+    if (!WP_BASE) return new Map();
 
-const url = `${WP_BASE}/wp-json/wp/v2/categories?per_page=100`;
-    const res = await fetch(url, {
-      next: { revalidate: 300 },
-      headers: wpHeaders(),
-    });
+    const url = `${WP_BASE}/wp-json/wp/v2/categories?per_page=100`;
+
+    const res = await fetchWithRetry(
+      url,
+      {
+        next: { revalidate: 300 }, // 5 min
+        headers: wpHeaders(),
+      },
+      { tries: 2, timeoutMs: 8000 }
+    );
+
     if (!res.ok) return new Map();
     if (!isJsonResponse(res)) return new Map();
 
     const cats: WPCategory[] = await res.json();
     const map = new Map<number, Category>();
-    for (const c of cats)
+    for (const c of cats) {
       map.set(c.id, { id: c.id, slug: c.slug, name: c.name });
+    }
     return map;
   } catch {
     return new Map();
@@ -131,18 +162,24 @@ export async function getWpPosts(opts?: {
 }) {
   try {
     const WP_BASE = process.env.WP_BASE_URL;
-if (!WP_BASE) return [];
+    if (!WP_BASE) return [];
 
     const perPage = opts?.perPage ?? 20;
 
     let categoryId: number | null = null;
+
     if (opts?.categorySlug) {
-      const catRes = await fetch(
+      const catRes = await fetchWithRetry(
         `${WP_BASE}/wp-json/wp/v2/categories?slug=${encodeURIComponent(
           opts.categorySlug
         )}`,
-        { next: { revalidate: 300 }, headers: wpHeaders() }
+        {
+          next: { revalidate: 300 },
+          headers: wpHeaders(),
+        },
+        { tries: 2, timeoutMs: 8000 }
       );
+
       if (catRes.ok && isJsonResponse(catRes)) {
         const found: WPCategory[] = await catRes.json();
         categoryId = found?.[0]?.id ?? null;
@@ -156,10 +193,16 @@ if (!WP_BASE) return [];
     if (categoryId) qs.set("categories", String(categoryId));
 
     const url = `${WP_BASE}/wp-json/wp/v2/posts?${qs.toString()}`;
-    const res = await fetch(url, {
-      next: { revalidate: 120 },
-      headers: wpHeaders(),
-    });
+
+    const res = await fetchWithRetry(
+      url,
+      {
+        next: { revalidate: 60 }, // 60s = stabil + suficient de fresh
+        headers: wpHeaders(),
+      },
+      { tries: 2, timeoutMs: 9000 }
+    );
+
     if (!res.ok) return [];
     if (!isJsonResponse(res)) return [];
 
@@ -194,49 +237,35 @@ if (!WP_BASE) return [];
   }
 }
 
-// lib/wp.ts
 export type WpPostResult =
   | { kind: "ok"; post: Post }
   | { kind: "not_found" }
   | { kind: "error"; status?: number; message: string };
 
-async function fetchJsonWithRetry(url: string, init: RequestInit, tries = 2) {
-  let lastErr: unknown;
-  for (let i = 0; i < tries; i++) {
-    try {
-      const res = await fetch(url, init);
-      return res;
-    } catch (e) {
-      lastErr = e;
-    }
-  }
-  throw lastErr;
-}
-
-export async function getWpPostBySlug(slug: string): Promise<WpPostResult> {
+export async function getWpPostBySlug(
+  slug: string,
+  opts?: { revalidate?: number }
+): Promise<WpPostResult> {
   try {
-    const WP_BASE = process.env.WP_BASE_URL; // <-- citește fresh (evită HMR stale)
+    const WP_BASE = process.env.WP_BASE_URL;
     if (!WP_BASE) return { kind: "error", message: "WP_BASE_URL missing" };
 
     const url = `${WP_BASE}/wp-json/wp/v2/posts?slug=${encodeURIComponent(
       slug
     )}&_embed=1`;
 
-    // IMPORTANT: reducem spam-ul de requesturi la refresh
-    // Revalidate mic = nu lovești WP la fiecare refresh, dar rămâne suficient de fresh.
-    const res = await fetchJsonWithRetry(
+    const res = await fetchWithRetry(
       url,
       {
-        next: { revalidate: 30 }, // <- anti-refresh-spam
+        next: { revalidate: opts?.revalidate ?? 60 }, // default 60s; metadata poate seta 10s
         headers: wpHeaders(),
       },
-      2
+      { tries: 2, timeoutMs: 9000 }
     );
 
     if (!res.ok) {
-      // WP returnează 404 doar pentru endpoint/route, nu pentru “post inexistent”
-      // (pentru post inexistent primești [] cu 200)
-      if (res.status === 404) return { kind: "error", status: 404, message: "WP endpoint 404" };
+      // La WP, pentru slug inexistent: 200 + [] (de obicei).
+      // 404 aici e de obicei endpoint/proxy/DNS problem.
       return { kind: "error", status: res.status, message: "WP non-OK" };
     }
 
@@ -276,4 +305,3 @@ export async function getWpPostBySlug(slug: string): Promise<WpPostResult> {
     };
   }
 }
-

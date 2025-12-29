@@ -33,15 +33,14 @@ async function getWpCategoryBySlug(slug: string): Promise<WPCategory | null> {
     if (!WP_BASE) return null;
 
     const res = await fetch(
-  `${WP_BASE}/wp-json/wp/v2/categories?slug=${encodeURIComponent(
-    slug
-  )}&per_page=1`,
-  {
-    next: { revalidate: 300 }, // categorie se schimbă rar
-    headers: wpHeaders(),
-  }
-);
-
+      `${WP_BASE}/wp-json/wp/v2/categories?slug=${encodeURIComponent(
+        slug
+      )}&per_page=1`,
+      {
+        next: { revalidate: 300 }, // categorie se schimbă rar
+        headers: wpHeaders(),
+      }
+    );
 
     if (!res.ok) return null;
     if (!isJsonResponse(res)) return null;
@@ -133,14 +132,18 @@ export default async function CategoryPage({ params }: PageProps) {
 
                 <div className="md:col-span-7">
                   <Link href={`/stire/${catFeatured.slug}`} className="block">
-                    <img
-                      src={catFeatured.image}
-                      alt={catFeatured.title}
-                      className="w-full object-cover"
-                      style={{ aspectRatio: "16 / 9" }}
-                      loading="lazy"
-                      decoding="async"
-                    />
+                    {catFeatured.image ? (
+                      <img
+                        src={catFeatured.image}
+                        alt={catFeatured.title}
+                        className="w-full object-cover"
+                        style={{ aspectRatio: "16 / 9" }}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <div className="aspect-[16/9] w-full rounded bg-gray-200 dark:bg-white/10" />
+                    )}
                   </Link>
                 </div>
               </div>
@@ -149,14 +152,18 @@ export default async function CategoryPage({ params }: PageProps) {
                 {catPosts.slice(1, 4).map((p) => (
                   <article key={p.id ?? p.slug}>
                     <Link href={`/stire/${p.slug}`} className="block">
-                      <img
-                        src={p.image}
-                        alt={p.title}
-                        className="w-full object-cover"
-                        style={{ aspectRatio: "16 / 9" }}
-                        loading="lazy"
-                        decoding="async"
-                      />
+                      {p.image ? (
+                        <img
+                          src={p.image}
+                          alt={p.title}
+                          className="w-full object-cover"
+                          style={{ aspectRatio: "16 / 9" }}
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      ) : (
+                        <div className="aspect-[16/9] w-full rounded bg-gray-200 dark:bg-white/10" />
+                      )}
                     </Link>
 
                     <Link

@@ -53,7 +53,7 @@ export function CurrencyBox() {
         setLoading(true);
 
         // 🔁 păstrează endpoint-ul tău aici
-        const res = await fetch("/api/latest?limit=4", { cache: "no-store" });
+        const res = await fetch("/api/latest?limit=4");
         if (!res.ok) throw new Error("bad response");
         const data = await res.json();
 

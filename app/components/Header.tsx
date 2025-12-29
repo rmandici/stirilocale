@@ -215,9 +215,7 @@ export function Header({ collapsed, categories }: HeaderProps) {
 
     (async () => {
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`, {
-          cache: "no-store",
-        });
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`, {});
         if (!res.ok) return;
         const data: SearchItem[] = await res.json();
         if (!cancelled) setDesktopResults(data);

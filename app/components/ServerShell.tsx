@@ -8,7 +8,14 @@ export default async function ServerShell({
   children: ReactNode;
 }) {
   const catsMap = await getWpCategories();
-  const categories = Array.from(catsMap.values()).filter(Boolean);
+
+  const categories = Array.from(catsMap.values())
+    .filter(Boolean)
+    .filter((c) => {
+      const slug = (c.slug ?? "").toLowerCase();
+      const name = (c.name ?? "").toLowerCase();
+      return slug !== "uncategorized" && name !== "uncategorized";
+    });
 
   return <Shell categories={categories}>{children}</Shell>;
 }

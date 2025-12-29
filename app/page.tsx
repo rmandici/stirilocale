@@ -45,12 +45,6 @@ function cn(...a: (string | false | undefined)[]) {
   return a.filter(Boolean).join(" ");
 }
 
-function Tag({ slug, name }: { slug?: string; name: string }) {
-  return (
-    <CategoryBadge slug={slug} name={name} className="px-3 py-1 text-[11px]" />
-  );
-}
-
 function categoryColorClass(slug?: string): string | null {
   const s = (slug ?? "").toLowerCase();
 
