@@ -80,7 +80,29 @@ function firstCategoryFromEmbedded(p: WPPost): Category {
 
 function featuredImageFromEmbedded(p: WPPost) {
   const media = p._embedded?.["wp:featuredmedia"]?.[0];
-  return media?.source_url ?? "";
+  if (!media) return "";
+
+  // 1) încearcă să alegi un url non-webp din sizes
+  const sizes = media?.media_details?.sizes;
+  if (sizes && typeof sizes === "object") {
+    const candidates = Object.values(sizes)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .map((s: any) => s?.source_url)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .filter((u: any) => typeof u === "string");
+
+    const nonWebp = candidates.find(
+      (u: string) => !u.toLowerCase().endsWith(".webp")
+    );
+    if (nonWebp) return nonWebp;
+  }
+
+  // 2) fallback pe source_url
+  const url = media?.source_url ?? "";
+  // dacă e webp și ai plugin care păstrează originalul, uneori merge să încerci jpg
+  // (opțional, dacă vrei)
+  // if (url.endsWith(".webp")) return url.replace(/\.webp$/i, ".jpg");
+  return url;
 }
 
 function wpHeaders() {

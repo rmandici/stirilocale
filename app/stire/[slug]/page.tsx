@@ -3,13 +3,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-
+import { cache } from "react";
 import { PopularInCategory } from "../../components/PopularInCategory";
 import { posts as demoPosts } from "../../data/posts";
 import { getWpPostBySlug, getWpPosts } from "../../lib/wp";
 
-// Temporar, ca să nu existe caching negativ / flapping între edge nodes
 export const revalidate = 60;
+
+const getPostCached = cache(async (slug: string) => {
+  return getWpPostBySlug(slug, { revalidate: 60 });
+});
 
 function siteBase() {
   const s =
@@ -17,10 +20,6 @@ function siteBase() {
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
   return s || "https://callatispress.ro";
 }
-
-type Props = {
-  params: { slug: string };
-};
 
 function stripHtmlToText(html?: string) {
   if (!html) return "";
@@ -37,14 +36,6 @@ function buildDesc(post: { title: string; content?: string }) {
   // Facebook afișează bine 150–200 caractere
   const short = txt.slice(0, 180).trim();
   return short || post.title;
-}
-
-function fmtDate(iso: string) {
-  try {
-    return new Date(iso).toLocaleDateString("ro-RO");
-  } catch {
-    return "";
-  }
 }
 
 function removeFirstDuplicateFeaturedImage(html: string, featuredUrl?: string) {
@@ -83,7 +74,7 @@ export async function generateMetadata({
 
   let r: any;
   try {
-    r = await getWpPostBySlug(slug);
+    r = await getPostCached(slug);
   } catch (e: any) {
     r = { kind: "error", message: e?.message ?? "WP fetch failed" };
   }
@@ -184,7 +175,7 @@ export async function generateMetadata({
 export default async function StirePage({ params }: PageProps) {
   const { slug } = await params; // <-- IMPORTANT
 
-  const r = await getWpPostBySlug(slug);
+  const r = await getPostCached(slug);
 
   // Demo fallback (din data/posts)
   const demoPost = demoPosts.find((p) => p.slug === slug) ?? null;
@@ -199,22 +190,22 @@ export default async function StirePage({ params }: PageProps) {
 
   // Dacă WP are eroare -> NU 404 (Facebook cache-uiește 404 ca “mort”)
   if (r.kind === "error") {
-  if (!demoPost) {
-    // nu 404, nu crash; afișăm un fallback safe
-    return (
-      <main className="bg-white text-gray-900 dark:bg-[#0b131a] dark:text-white">
-        <div className="mx-auto max-w-3xl px-4 py-16">
-          <h1 className="text-2xl font-extrabold">Momentan indisponibil</h1>
-          <p className="mt-4 text-gray-600 dark:text-white/70">
-            Serverul de conținut răspunde greu. Te rugăm să reîncerci în câteva secunde.
-          </p>
-        </div>
-      </main>
-    );
+    if (!demoPost) {
+      // nu 404, nu crash; afișăm un fallback safe
+      return (
+        <main className="bg-white text-gray-900 dark:bg-[#0b131a] dark:text-white">
+          <div className="mx-auto max-w-3xl px-4 py-16">
+            <h1 className="text-2xl font-extrabold">Momentan indisponibil</h1>
+            <p className="mt-4 text-gray-600 dark:text-white/70">
+              Serverul de conținut răspunde greu. Te rugăm să reîncerci în
+              câteva secunde.
+            </p>
+          </div>
+        </main>
+      );
+    }
+    // altfel continuăm cu demo
   }
-  // altfel continuăm cu demo
-}
-
 
   const wpPost = r.kind === "ok" ? r.post : null;
   const post = wpPost ?? demoPost;
