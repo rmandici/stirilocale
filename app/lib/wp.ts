@@ -13,8 +13,14 @@ export type Post = {
   content: string;
   category: Category;
   publishedAt: string;
+
+  // UI image (can be WebP)
   image: string;
   images: string[];
+
+  // Social share image (should be JPG/PNG for Facebook)
+  ogImage?: string;
+
   featured?: boolean;
   views: number;
   video?: string;
@@ -78,11 +84,15 @@ function firstCategoryFromEmbedded(p: WPPost): Category {
   return { slug: "general", name: "General" };
 }
 
+/**
+ * UI image:
+ * Prefer a reasonably-sized image from sizes (can be webp) to keep pages fast.
+ * If nothing found, fallback to source_url.
+ */
 function featuredImageFromEmbedded(p: WPPost) {
   const media = p._embedded?.["wp:featuredmedia"]?.[0];
   if (!media) return "";
 
-  // 1) încearcă să alegi un url non-webp din sizes
   const sizes = media?.media_details?.sizes;
   if (sizes && typeof sizes === "object") {
     const candidates = Object.values(sizes)
@@ -91,18 +101,58 @@ function featuredImageFromEmbedded(p: WPPost) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .filter((u: any) => typeof u === "string");
 
-    const nonWebp = candidates.find(
-      (u: string) => !u.toLowerCase().endsWith(".webp")
-    );
-    if (nonWebp) return nonWebp;
+    // Prefer something that isn't tiny; try common "large-ish" first
+    const preferredOrder = ["large", "medium_large", "medium", "full"];
+    for (const key of preferredOrder) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const u = (sizes as any)?.[key]?.source_url;
+      if (typeof u === "string" && u.length) return u;
+    }
+
+    // Otherwise take first candidate
+    if (candidates.length) return candidates[0];
   }
 
-  // 2) fallback pe source_url
-  const url = media?.source_url ?? "";
-  if (url.toLowerCase().endsWith(".webp")) {
-    // MU-pluginul din WP creează deja fallback .jpg lângă .webp
-    return url.replace(/\.webp$/i, ".jpg");
+  return media?.source_url ?? "";
+}
+
+/**
+ * OG image (Facebook-safe):
+ * Use ORIGINAL (source_url). If it's .webp, we rely on MU-plugin to have created .jpg
+ * next to it (same name, .jpg).
+ */
+function featuredOgImageFromEmbedded(p: WPPost) {
+  const media = p._embedded?.["wp:featuredmedia"]?.[0];
+  if (!media) return "";
+
+  // 1) încearcă să ia calea fișierului original (fără -scaled)
+  const fileRel: string | undefined = media?.media_details?.file;
+  // ex: "2025/12/file_example_WEBP_250kB.webp"
+
+  const base: string | undefined = media?.source_url;
+  // ex: "https://cms.../uploads/2025/12/file_example_WEBP_250kB-scaled.webp"
+
+  if (fileRel && typeof fileRel === "string") {
+    // derivăm base uploads URL din source_url
+    // tăiem după "/uploads/"
+    const i = base?.indexOf("/uploads/");
+    if (i && i >= 0 && base) {
+      const uploadsBase = base.slice(0, i + "/uploads/".length); // ".../uploads/"
+      const originalUrl = uploadsBase + fileRel; // ".../uploads/2025/12/file.webp"
+
+      // OG: dacă originalul e webp, MU-pluginul a creat .jpg lângă el
+      if (originalUrl.toLowerCase().endsWith(".webp")) {
+        return originalUrl.replace(/\.webp$/i, ".jpg");
+      }
+      return originalUrl;
+    }
   }
+
+  // 2) fallback: dacă nu avem media_details.file, folosește source_url (ca înainte)
+  const url = media?.source_url ?? "";
+  if (!url) return "";
+  if (url.toLowerCase().endsWith(".webp"))
+    return url.replace(/\.webp$/i, ".jpg");
   return url;
 }
 
@@ -236,7 +286,9 @@ export async function getWpPosts(opts?: {
       const excerpt = stripHtml(p.excerpt?.rendered ?? "");
       const title = stripHtml(p.title?.rendered ?? "");
 
-      const image = featuredImageFromEmbedded(p);
+      const image = featuredImageFromEmbedded(p); // UI (webp ok)
+      const ogImage = featuredOgImageFromEmbedded(p); // OG (jpg fallback)
+
       const category = firstCategoryFromEmbedded(p);
 
       return {
@@ -249,6 +301,7 @@ export async function getWpPosts(opts?: {
         category,
         publishedAt: p.date,
         image,
+        ogImage,
         images: image ? [image] : [],
         featured: idx === 0,
         views: 0,
@@ -287,8 +340,6 @@ export async function getWpPostBySlug(
     );
 
     if (!res.ok) {
-      // La WP, pentru slug inexistent: 200 + [] (de obicei).
-      // 404 aici e de obicei endpoint/proxy/DNS problem.
       return { kind: "error", status: res.status, message: "WP non-OK" };
     }
 
@@ -301,7 +352,10 @@ export async function getWpPostBySlug(
 
     const p = arr[0];
     const content = p.content?.rendered ?? "";
-    const image = featuredImageFromEmbedded(p);
+
+    const image = featuredImageFromEmbedded(p); // UI
+    const ogImage = featuredOgImageFromEmbedded(p); // OG
+
     const category = firstCategoryFromEmbedded(p);
 
     const post: Post = {
@@ -314,6 +368,7 @@ export async function getWpPostBySlug(
       category,
       publishedAt: p.date,
       image,
+      ogImage,
       images: image ? [image] : [],
       featured: false,
       views: 0,
